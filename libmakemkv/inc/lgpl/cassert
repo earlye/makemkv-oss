@@ -1,0 +1,51 @@
+/*
+    libMakeMKV - MKV multiplexer library
+
+    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+*/
+#ifndef CASSERT_LGPL_H_INCLUDED
+#define CASSERT_LGPL_H_INCLUDED
+
+#include <exception>
+
+class mkv_error_exception : public std::exception
+{
+    const char* m_message;
+public:
+  mkv_error_exception(const char* Message)
+    : m_message(Message)
+    {
+    }
+    const char* what() const throw()
+    {
+      return m_message;
+    }
+};
+
+int MkvAssertHelper(const char* Message);
+
+#define MKV_ASSERT(_Expression_) \
+    (void)( (!!(_Expression_)) || (MkvAssertHelper("MKV_ASSERT: " #_Expression_ )) );
+
+#ifdef assert
+#error assert
+#endif
+
+#define assert MKV_ASSERT
+
+#endif // CASSERT_LGPL_H_INCLUDED

@@ -1,0 +1,9 @@
+LIBRARY libmakemkv
+EXPORTS
+  set_world=set_world
+  MkvCreateFile=MkvCreateFile
+  HTTP_Download
+  getopt_long=getopt_long
+  getopt_get_optind=getopt_get_optind
+  getopt_get_optarg=getopt_get_optarg
+
