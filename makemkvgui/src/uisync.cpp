@@ -42,12 +42,12 @@ public:
             setFlags( Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         } else {
             setFlags( Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
-            // if (true==m_UiItem->get_Enabled())
-            // {
-            //     setCheckState(0,Qt::Checked);
-            // } else {
+            if (true==m_UiItem->get_Enabled())
+            {
+                setCheckState(0,Qt::Checked);
+            } else {
                 setCheckState(0,Qt::Unchecked);
-            // }
+            }
         }
         m_NoSync = false;
     }
@@ -642,6 +642,7 @@ void MainWnd::updateEmptyBox(int cur_ndx,bool boxEnabled)
         empty_dvd->setVisible(false);
         empty_dvd_box->setVisible(false);
     } else {
+      bool tryOpen = false;
         CDriveInfo* info = &DriveInfo[cur_ndx];
         empty_type->setText(info->type);
         empty_label->setText(info->label);
@@ -683,6 +684,7 @@ void MainWnd::updateEmptyBox(int cur_ndx,bool boxEnabled)
             empty_big_btn->setEnabled(false);
             break;
         case AP_DriveStateInserted:
+	  tryOpen = true;
             switch(info->disk_type)
             {
             case dtBluray:
@@ -714,7 +716,7 @@ void MainWnd::updateEmptyBox(int cur_ndx,bool boxEnabled)
             break;
         }
         emptyDriveBox->setEnabled(boxEnabled);
-	if (boxEnabled) {
+	if (boxEnabled && tryOpen) {
 	  QTimer::singleShot(5000, this, SLOT(SlotOpenDriveBigBtn()));
 	}
     }
