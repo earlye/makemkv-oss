@@ -1102,13 +1102,20 @@ int MainWnd::ReportUiMessage(
             icon = QMessageBox::Warning;
         }
 
-        QMessageBox msgBox(icon,UI_QSTRING(APP_CAPTION_MSG),QStringFromUtf16(Text),QMessageBox::Ok,this);
-        msgBox.setEscapeButton(QMessageBox::Ok);
+	QString message = QStringFromUtf16(Text);
+	if (message.startsWith("Copy complete."))
+	  {
+	    QTimer::singleShot(5000, this, SLOT(SlotEjectDisk()));
+	  }	
+	else
+	  {
+	    QMessageBox msgBox(icon,UI_QSTRING(APP_CAPTION_MSG),message,QMessageBox::Ok,this);
+	    msgBox.setEscapeButton(QMessageBox::Ok);
 
-        m_disable_onidle++;
-        msgBox.exec();
-        m_disable_onidle--;
-
+	    m_disable_onidle++;
+	    msgBox.exec();
+	    m_disable_onidle--;
+	  }
         return 0;
     }
 
