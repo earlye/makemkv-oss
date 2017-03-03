@@ -110,6 +110,7 @@ private slots:
     void SlotTreeItemCollapsed(QTreeWidgetItem *item);
     void SlotToggleTreeItem();
     void SlotSelectTreeItem();
+    void SlotSelectOnlyTreeItem();
     void SlotUnselectTreeItem();
     void SlotQuit();
     void SlotSettings();
@@ -299,6 +300,7 @@ private:
     QAction *m_tree_toggle;
     QAction *m_tree_select;
     QAction *m_tree_unselect;
+    QAction *m_tree_selectonly;
 
     QAction* dvdToHdAct;
     QAction* hddvdToHdAct;

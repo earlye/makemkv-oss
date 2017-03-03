@@ -301,6 +301,12 @@ void MainWnd::SlotUnselectTreeItem()
     SetSiblingsState(GetSelectedItem(titleTreeView),false);
 }
 
+void MainWnd::SlotSelectOnlyTreeItem()
+{
+    SetSiblingsState(GetSelectedItem(titleTreeView),false);
+    SlotToggleTreeItem();
+}
+
 void MainWnd::SlotToggleTreeItem()
 {
     CCheckTreeItem* item = GetSelectedItem(titleTreeView);

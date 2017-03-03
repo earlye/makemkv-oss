@@ -674,6 +674,7 @@ void MainWnd::createStatusBar()
     statusBar()->showMessage(QString());
 }
 
+
 QWidget* MainWnd::CreateMainFrame()
 {
     QSplitter* sp_v = new QSplitter(Qt::Horizontal,this);
@@ -691,9 +692,13 @@ QWidget* MainWnd::CreateMainFrame()
     m_tree_unselect = new QAction(UI_QSTRING(APP_IFACE_ACT_TTREE_UNSELECT_ALL),this);
     connect(m_tree_unselect, SIGNAL(triggered()), this, SLOT(SlotUnselectTreeItem()));
 
+    m_tree_selectonly = new QAction("Select Only This Item",this);
+    connect(m_tree_selectonly, SIGNAL(triggered()), this, SLOT(SlotSelectOnlyTreeItem()));
+
     titleTreeView->addAction(m_tree_toggle);
     titleTreeView->addAction(m_tree_select);
     titleTreeView->addAction(m_tree_unselect);
+    titleTreeView->addAction(m_tree_selectonly);
 
     titleTreeView->setContextMenuPolicy(Qt::ActionsContextMenu);
 
