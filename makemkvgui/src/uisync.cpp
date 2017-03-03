@@ -305,6 +305,9 @@ void MainWnd::SlotSelectOnlyTreeItem()
 {
     SetSiblingsState(GetSelectedItem(titleTreeView),false);
     SlotToggleTreeItem();
+    itemInfoCbox->setCurrentIndex(1);
+    itemInfoLine->clear();
+    itemInfoLine->setFocus(Qt::OtherFocusReason);
 }
 
 void MainWnd::SlotToggleTreeItem()
@@ -848,7 +851,12 @@ void MainWnd::Update_TitleTree_from_app(bool setFolder)
         {
             saveFolderBox->clear();
             saveFolderBox->setMRU(m_app->GetSettingString(apset_path_DestDirMRU));
-            saveFolderBox->setText(QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputFolderName)));
+	    QString text = QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputBaseName));
+	    DoProcessLogMessage(QString("settingString:apset_path_DestDirMRU:") + QStringFromUtf16(m_app->GetSettingString(apset_path_DestDirMRU)),0);
+	    DoProcessLogMessage("appString:AP_vastr_OutputBaseName:" + QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputBaseName)),0);
+	    DoProcessLogMessage("appString:AP_vastr_OutputFolderName:" + QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputFolderName)),0);
+	    DoProcessLogMessage("setting folder:" + text,0);
+            saveFolderBox->setText(text);
         }
 
     } else {

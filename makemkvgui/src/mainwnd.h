@@ -216,7 +216,7 @@ private:
     QLabel* totalProgressLabel;
     QGrayTextViewer* itemInfoEdit;
     QLineEdit* itemInfoLine;
-    QComboBox* itemInfoCbox;
+    QComboBox* itemInfoCbox; // The Name/Filename/Metadata Language Combo
     QToolButton* itemInfoButton;
     QComboBox* profileCbox;
     QGroupBox* itemBox1;
