@@ -1,7 +1,7 @@
 /*
     libDriveIo - MMC drive interrogation library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libdriveio@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libdriveio@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -29,18 +29,30 @@
 #include <ws2tcpip.h>
 #include <errno.h>
 
-#define SOL_TCP IPPROTO_TCP
+#define SOL_TCP         IPPROTO_TCP
 #define SHUT_RDWR       SD_BOTH
 #define SHUT_RD         SD_RECEIVE
 #define SHUT_WR         SD_SEND
 
 #undef EAGAIN
 
+#ifndef EISCONN
 #define EISCONN     WSAEISCONN
+#endif
+#ifndef ENOTCONN
 #define ENOTCONN    WSAENOTCONN
+#endif
+#ifndef EAGAIN
 #define EAGAIN      WSAENOBUFS
+#endif
+#ifndef EINPROGRESS
 #define EINPROGRESS WSAEINPROGRESS
+#endif
+#ifndef EALREADY
 #define EALREADY    WSAEALREADY
+#endif
+
+#define tcpip_errno() (WSAGetLastError())
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,13 +87,6 @@ static int __inline tcpip_startup()
     return 0;
 }
 
-static int __inline tcpip_errno()
-{
-    int err = WSAGetLastError();
-    if (err==0) err = EIO;
-    return err;
-}
-
 #ifdef __cplusplus
 };
 #endif
@@ -94,6 +99,7 @@ static int __inline tcpip_errno()
 #include <netdb.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 

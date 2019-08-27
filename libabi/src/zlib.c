@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -114,10 +114,15 @@ int ZLIB_get_uncompressed_size2(unsigned int* destLen,const uint8_t* source,unsi
 
 int ZLIB_uncompress(uint8_t* dest,unsigned int* destLen,const uint8_t* source,unsigned int sourceLen)
 {
-    return ZLIB_uncompress2(dest,destLen,source,sourceLen,15);
+    return ZLIB_uncompress3(dest,destLen,source,sourceLen,15,NULL,0);
 }
 
 int ZLIB_uncompress2(uint8_t* dest,unsigned int* destLen,const uint8_t* source,unsigned int sourceLen,int windowBits)
+{
+    return ZLIB_uncompress3(dest,destLen,source,sourceLen,windowBits,NULL,0);
+}
+
+int ZLIB_uncompress3(uint8_t* dest,unsigned int* destLen,const uint8_t* source,unsigned int sourceLen,int windowBits,const uint8_t* dict,unsigned int dictLen)
 {
     z_stream    strm;
     int         err;
@@ -139,7 +144,13 @@ int ZLIB_uncompress2(uint8_t* dest,unsigned int* destLen,const uint8_t* source,u
     }
 
     err = inflateInit2(&strm,windowBits);
-    if (err != Z_OK) return err;
+    if (err != Z_OK) return ZLIB_translateError(err);
+
+    if (dictLen != 0)
+    {
+        err = inflateSetDictionary(&strm, dict, dictLen);
+        if (err != Z_OK) return ZLIB_translateError(err);
+    }
 
     err = inflate(&strm, Z_FINISH);
     if (err != Z_STREAM_END) {
@@ -204,6 +215,11 @@ int ZLIB_deflateAsync(ZLIB_Z_STREAM* zstream,int finish)
 int ZLIB_deflateEnd(ZLIB_Z_STREAM* zstream)
 {
     return ZLIB_translateError( deflateEnd( ((z_stream*)zstream) ) );
+}
+
+int ZLIB_deflateSetDictionary(ZLIB_Z_STREAM* zstream,const uint8_t* dict,unsigned int dictLen)
+{
+    return ZLIB_translateError( deflateSetDictionary( ((z_stream*)zstream) , dict , dictLen ) );
 }
 
 uint32_t ZLIB_crc32(uint32_t crc,const uint8_t* buf,unsigned int len)

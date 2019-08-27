@@ -38,6 +38,11 @@
 
 START_LIBEBML_NAMESPACE
 
-const ccc::string EbmlCodeVersion = "1.3.3";
+const ccc::string EbmlCodeVersion = "1.3.5";
+
+// Up to version 1.3.3 this library exported a build date string. As
+// this made the build non-reproducible, replace it by a placeholder to
+// remain API compatible.
+const ccc::string EbmlCodeDate = "Unknown";
 
 END_LIBEBML_NAMESPACE

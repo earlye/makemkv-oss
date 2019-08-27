@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and

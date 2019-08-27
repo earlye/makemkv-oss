@@ -1,7 +1,7 @@
 /*
     libDriveIo - MMC drive interrogation library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libdriveio@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libdriveio@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -20,10 +20,9 @@
 */
 #include <stddef.h>
 #include <stdint.h>
-#include <driveio/scsicmd.h>
+#include <driveio/scsihlp.h>
 #include <errno.h>
 #include <string.h>
-#include "scsihlp.h"
 #include <unistd.h>
 
 static int ExecuteReadWriteScsiCommand(bool Read,ISimpleScsiTarget* ScsiTarget,const uint8_t* Cdb,unsigned int CdbLen,void *Buffer,unsigned int BufferSize,ScsiCmdResponse* Response)
@@ -34,7 +33,7 @@ static int ExecuteReadWriteScsiCommand(bool Read,ISimpleScsiTarget* ScsiTarget,c
 
     if (CdbLen>16)
     {
-        return EINVAL;
+        return -EINVAL;
     }
 
     memset(&cmd,0,sizeof(cmd));
@@ -70,7 +69,7 @@ static int ExecuteReadWriteScsiCommand(bool Read,ISimpleScsiTarget* ScsiTarget,c
         cmd.Cdb[11] = 0;
         break;
     default:
-        return EINVAL;
+        return -EINVAL;
     }
 
     if (Read)
@@ -104,7 +103,7 @@ int LibDriveIo::ExecuteReadScsiCommand(ISimpleScsiTarget* ScsiTarget,const uint8
 
     if (res.Status!=0)
     {
-        return EIO;
+        return -EIO;
     }
 
     *BufferSize = res.Transferred;
@@ -126,12 +125,12 @@ int LibDriveIo::ExecuteWriteScsiCommand(ISimpleScsiTarget* ScsiTarget,const uint
 
     if (res.Status!=0)
     {
-        return EIO;
+        return -EIO;
     }
 
     if (res.Transferred!=BufferSize)
     {
-        return EIO;
+        return -EIO;
     }
 
     return 0;
@@ -185,7 +184,6 @@ int LibDriveIo::TestUnitReady(ISimpleScsiTarget* ScsiTarget, bool* Ready)
             return 0;
         }
 
-
         if ( (res.Status==2) &&
              (res.SenseData[0]==0x70) &&
              (res.SenseData[2]==2) &&
@@ -215,21 +213,21 @@ static void CopyPaddedString(char *dst,unsigned int len,const void *src)
 }
 
 
-static void AddInquiryData(ScsiDriveInfo *DriveInfo,const uint8_t* Data)
+static void AddInquiryData(ScsiInquiryData *InquiryData,const uint8_t* Data)
 {
-    DriveInfo->inq.DeviceType = Data[0] & 0x1f;
+    InquiryData->DeviceType = Data[0] & 0x1f;
 
-    CopyPaddedString(DriveInfo->inq.Vendor,8,Data+8);
-    CopyPaddedString(DriveInfo->inq.Product,16,Data+16);
-    CopyPaddedString(DriveInfo->inq.Revision,4,Data+32);
+    CopyPaddedString(InquiryData->Vendor,8,Data+8);
+    CopyPaddedString(InquiryData->Product,16,Data+16);
+    CopyPaddedString(InquiryData->Revision,4,Data+32);
 
-    memset(DriveInfo->inq.VendorSpecificInfo,0,20);
+    memset(InquiryData->VendorSpecificInfo,0,20);
     unsigned int len = ((unsigned int)Data[4])+5;
     if (len>36)
     {
         len -= 36;
         if (len>20) len=20;
-        memcpy(DriveInfo->inq.VendorSpecificInfo,Data+36,len);
+        memcpy(InquiryData->VendorSpecificInfo,Data+36,len);
     }
 }
 
@@ -257,7 +255,7 @@ static int ReadSingleFeatureDescriptor(ISimpleScsiTarget* ScsiTarget,uint16_t Id
     cdb_rf[3]=(uint8_t)(Id>>0);
 
     len = BufferLen;
-    err=ExecuteReadScsiCommand(ScsiTarget,cdb_rf,10,Buffer,&len);
+    err=LibDriveIo::ExecuteReadScsiCommand(ScsiTarget,cdb_rf,10,Buffer,&len);
     if (err) return err;
 
     slen = uint32_get_be(Buffer) + 4;
@@ -313,7 +311,7 @@ int LibDriveIo::QueryInquiryInfo(ISimpleScsiTarget* ScsiTarget,uint8_t Evpd,uint
                 //
                 memset(Buffer+len,0,slen-len);
             } else {
-                return ERANGE;
+                return -ERANGE;
             }
         }
     } else {
@@ -330,43 +328,42 @@ int LibDriveIo::QueryInquiryInfo(ISimpleScsiTarget* ScsiTarget,uint8_t Evpd,uint
     return 0;
 }
 
-int LibDriveIo::BuildDriveInfo(ISimpleScsiTarget* ScsiTarget,DIO_INFOLIST List,ScsiDriveInfo *DriveInfo)
+int LibDriveIo::BuildInquiryData(ISimpleScsiTarget* ScsiTarget,DIO_INFOLIST List,ScsiInquiryData *InquiryData)
 {
     int err;
     uint8_t buf[256];
     unsigned int len;
     DriveInfoItem   item;
-    bool have;
 
     if (0==DriveInfoList_GetItemById(List,diid_InquiryData,&item))
     {
         // have drive info
-
-        AddInquiryData(DriveInfo,(const uint8_t*)item.Data);
-
-        if (0==DriveInfoList_GetItemById(List,diid_FeatureDescriptor_FirmwareInformation,&item))
-        {
-            AddFirmwareDate(DriveInfo,(const uint8_t*)item.Data);
-        } else {
-            DriveInfo->firmware_date[0]=0;
-        }
-
-        if (0==DriveInfoList_GetItemById(List,diid_FeatureDescriptor_DriveSerialNumber,&item))
-        {
-            AddSerialNumber(DriveInfo,(const uint8_t*)item.Data);
-        } else {
-            DriveInfo->serial_number[0]=0;
-        }
-
+        AddInquiryData(InquiryData,(const uint8_t*)item.Data);
     } else {
-
         // no drive info, query all data manually
-
         if (0!=(err=QueryInquiryInfo(ScsiTarget,0,buf,&len))) return err;
-        AddInquiryData(DriveInfo,buf);
+        AddInquiryData(InquiryData,buf);
 
-        if ((buf[0]&0x1f)!=5) return EBADF; // not a MMC drive
+        if ((buf[0]&0x1f)!=5) return -EBADF; // not a MMC drive
+    }
 
+    return 0;
+}
+
+int LibDriveIo::BuildDriveInfo(ISimpleScsiTarget* ScsiTarget,DIO_INFOLIST List,ScsiDriveInfo *DriveInfo)
+{
+    int err;
+    uint8_t buf[256];
+    DriveInfoItem   item;
+    bool have;
+
+    err=BuildInquiryData(ScsiTarget,List,&DriveInfo->inq);
+    if (err) return err;
+
+    if (0==DriveInfoList_GetItemById(List,diid_FeatureDescriptor_FirmwareInformation,&item))
+    {
+        AddFirmwareDate(DriveInfo,(const uint8_t*)item.Data);
+    } else {
         if (0!=(err=ReadSingleFeatureDescriptor(ScsiTarget,0x10c,buf,sizeof(buf),&have))) return err;
         if (have)
         {
@@ -374,7 +371,12 @@ int LibDriveIo::BuildDriveInfo(ISimpleScsiTarget* ScsiTarget,DIO_INFOLIST List,S
         } else {
             DriveInfo->firmware_date[0]=0;
         }
+    }
 
+    if (0==DriveInfoList_GetItemById(List,diid_FeatureDescriptor_DriveSerialNumber,&item))
+    {
+        AddSerialNumber(DriveInfo,(const uint8_t*)item.Data);
+    } else {
         if (0!=(err=ReadSingleFeatureDescriptor(ScsiTarget,0x108,buf,sizeof(buf),&have))) return err;
         if (have)
         {
@@ -382,9 +384,7 @@ int LibDriveIo::BuildDriveInfo(ISimpleScsiTarget* ScsiTarget,DIO_INFOLIST List,S
         } else {
             DriveInfo->serial_number[0]=0;
         }
-
     }
 
     return 0;
 }
-

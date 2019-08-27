@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -73,6 +73,7 @@ int     SYS_fstatfs(int fd, SYS_statfs *buf);
 char**  SYS_posix_envp();
 int     SYS_posix_getmyname(char* buffer,int length);
 int     SYS_posix_launch(char** argv,int fdstdin,int fdstdout,int fdstderr,char ** envp);
+int     SYS_posix_launch2(uintptr_t* pid,char** argv,int fdstdin,int fdstdout,int fdstderr,char ** envp);
 void*   SYS_memcpy(void *dest, const void *src,size_t n);
 
 #ifdef __cplusplus

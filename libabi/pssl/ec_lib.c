@@ -86,8 +86,8 @@ static EC_GROUP *EC_GROUP_new(const EC_METHOD *meth)
 
 	ret->generator = NULL;
 	ret->precomp = NULL;
-	BN_init(&ret->order);
-	BN_init(&ret->cofactor);
+	if (NULL==(ret->order = BN_new())) { return NULL; }
+	if (NULL==(ret->cofactor = BN_new())) { return NULL; }
 
 	if (!ec_GFp_mont_group_init(ret))
 		{
@@ -109,8 +109,8 @@ static void EC_GROUP_free(EC_GROUP *group)
 		EC_POINT_free(group->generator);
 	if (group->precomp != NULL)
 		ec_pre_comp_free(group->precomp);
-	BN_free(&group->order);
-	BN_free(&group->cofactor);
+	BN_free(group->order);
+	BN_free(group->cofactor);
 
 	OPENSSL_free(group);
 	}
@@ -126,8 +126,8 @@ static void EC_GROUP_clear_free(EC_GROUP *group)
 		EC_POINT_clear_free(group->generator);
 	if (group->precomp != NULL)
 		ec_pre_comp_clear_free(group->precomp);
-	BN_clear_free(&group->order);
-	BN_clear_free(&group->cofactor);
+	BN_clear_free(group->order);
+	BN_clear_free(group->cofactor);
 
 	OPENSSL_cleanse(group, sizeof *group);
 	OPENSSL_free(group);
@@ -168,8 +168,8 @@ static int EC_GROUP_copy(EC_GROUP *dest, const EC_GROUP *src)
 		dest->precomp = ec_pre_comp_dup(src->precomp);
 		}
 
-	if (!BN_copy(&dest->order, &src->order)) return 0;
-	if (!BN_copy(&dest->cofactor, &src->cofactor)) return 0;
+	if (!BN_copy(dest->order, src->order)) return 0;
+	if (!BN_copy(dest->cofactor, src->cofactor)) return 0;
 
 	return ec_GFp_mont_group_copy(dest, src);
 	}
@@ -213,14 +213,14 @@ static int EC_GROUP_set_generator(EC_GROUP *group, const EC_POINT *generator, co
 	if (!EC_POINT_copy(group->generator, generator)) return 0;
 
 	if (order != NULL)
-		{ if (!BN_copy(&group->order, order)) return 0; }	
+		{ if (!BN_copy(group->order, order)) return 0; }	
 	else
-		BN_zero(&group->order);
+		BN_zero(group->order);
 
 	if (cofactor != NULL)
-		{ if (!BN_copy(&group->cofactor, cofactor)) return 0; }	
+		{ if (!BN_copy(group->cofactor, cofactor)) return 0; }	
 	else
-		BN_zero(&group->cofactor);
+		BN_zero(group->cofactor);
 
 	return 1;
 	}
@@ -234,7 +234,7 @@ static const EC_POINT *EC_GROUP_get0_generator(const EC_GROUP *group)
 
 static int EC_GROUP_get_order(const EC_GROUP *group, BIGNUM *order, BN_CTX *ctx)
 	{
-	if (!BN_copy(order, &group->order))
+	if (!BN_copy(order, group->order))
 		return 0;
 
 	return !BN_is_zero(order);

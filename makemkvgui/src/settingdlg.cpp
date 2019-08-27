@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -28,30 +28,26 @@ CSettingDialog::CSettingDialog(CGUIApClient* ap_client,QIcon* icon,QWidget *pare
     tabWidget->setUsesScrollButtons(false);
     buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel | QDialogButtonBox::Apply , Qt::Horizontal);
 
+    // general
+    generalTab = new CGeneralTab();
+    tabWidget->addTab(generalTab,UI_QSTRING(APP_IFACE_SETTINGS_TAB_GENERAL));
+    connect(generalTab->check_ExpertMode,SIGNAL(stateChanged(int)),this,SLOT(SlotExpertStateChanged(int)));
+
     // dvd
     dvdTab = new CDVDTab(client);
-    tabWidget->addTab(dvdTab, UI_QSTRING(APP_TTREE_VIDEO));
+    tabWidget->addTab(dvdTab,UI_QSTRING(APP_TTREE_VIDEO));
 
     // IO
     ioTab = new CIOTab();
-    tabWidget->addTab(ioTab, UI_QSTRING(APP_IFACE_SETTINGS_TAB_IO));
+    tabWidget->addTab(ioTab,UI_QSTRING(APP_IFACE_SETTINGS_TAB_IO));
 
     // Language
     languageTab = new CLanguageTab(client);
-    tabWidget->addTab(languageTab , UI_QSTRING(APP_IFACE_SETTINGS_TAB_LANGUAGE));
+    tabWidget->addTab(languageTab,UI_QSTRING(APP_IFACE_SETTINGS_TAB_LANGUAGE));
 
     // prot
     protTab = new CProtTab();
     tabWidget->addTab(protTab, UI_QSTRING(APP_IFACE_SETTINGS_TAB_PROT));
-
-    // stream
-    streamTab = new CStreamTab();
-    tabWidget->addTab(streamTab, UI_QSTRING(APP_IFACE_SETTINGS_TAB_STREAMING));
-
-    // general
-    generalTab = new CGeneralTab();
-    tabWidget->addTab(generalTab , UI_QSTRING(APP_IFACE_SETTINGS_TAB_GENERAL));
-    connect(generalTab->check_ExpertMode, SIGNAL(stateChanged(int)), this, SLOT(SlotExpertStateChanged(int)));
 
     advancedTab = new CAdvancedTab(ap_client);
     advancedTabVisible = false;
@@ -68,7 +64,7 @@ CSettingDialog::CSettingDialog(CGUIApClient* ap_client,QIcon* icon,QWidget *pare
 
     connect(this, SIGNAL(accepted()) , this , SLOT(SlotApply()));
 
-    ReadSettings();
+    ReadSettings(true);
 };
 
 CSettingDialog::~CSettingDialog()
@@ -87,7 +83,7 @@ void CSettingDialog::SlotApply()
     {
         QMessageBox::critical(this,UI_QSTRING(APP_CAPTION_MSG),UI_QSTRING(APP_IFACE_SETTINGS_MSG_FAILED));
     }
-    ReadSettings();
+    ReadSettings(false);
 
     if (restartRequired)
     {
@@ -96,7 +92,7 @@ void CSettingDialog::SlotApply()
     }
 }
 
-void CSettingDialog::ReadSettings()
+void CSettingDialog::ReadSettings(bool first)
 {
     static const utf16_t zero[1]={0};
 
@@ -163,29 +159,6 @@ void CSettingDialog::ReadSettings()
     int dump_always = client->GetSettingInt(apset_bdplus_DumpAlways);
     protTab->check_DumpAlways->setCheckState( (dump_always==0) ? Qt::Unchecked : Qt::Checked );
 
-    // stream
-    int Enableupnp = client->GetSettingInt(apset_stream_EnableUPNP);
-    streamTab->checkEnableUpnp->setCheckState( (Enableupnp==0) ? Qt::Unchecked : Qt::Checked );
-
-    const utf16_t *ipaddress = client->GetSettingString(apset_stream_BindIp);
-    if (ipaddress)
-    {
-        if (ipaddress[0]==0) ipaddress=NULL;
-    }
-    if (!ipaddress)
-    {
-        streamTab->comboAddress->setCurrentIndex(0);
-    } else {
-        if (streamTab->comboAddress->findText(QStringFromUtf16(ipaddress))<0)
-        {
-            streamTab->comboAddress->addItem(QStringFromUtf16(ipaddress));
-        }
-        streamTab->comboAddress->setCurrentIndex(streamTab->comboAddress->findText(QStringFromUtf16(ipaddress)));
-    }
-
-    int BindPort = client->GetSettingInt(apset_stream_BindPort);
-    streamTab->spinPort->setValue(BindPort);
-
     // advanced
     const utf16_t *defaultProfile = client->GetSettingString(apset_app_DefaultProfileName);
     if (NULL==defaultProfile) defaultProfile=zero;
@@ -205,13 +178,28 @@ void CSettingDialog::ReadSettings()
     if (NULL==defaultSelection) defaultSelection=zero;
     if (defaultSelection[0]==0)
     {
-        defaultSelection = client->GetProfileString(0,2);
+        defaultSelection = client->GetAppString(AP_vastr_DefaultSelectionString);
     }
     advancedTab->lineEditSelection->setText(QStringFromUtf16(defaultSelection));
 
-    advancedTab->dtshddecDir->setText(QStringFromUtf16( client->GetSettingString(apset_app_dtshddec)));
+    const utf16_t *defaultOutputFileName = client->GetSettingString(apset_app_DefaultOutputFileName);
+    if (NULL==defaultOutputFileName) defaultOutputFileName=zero;
+    if (defaultOutputFileName[0]==0)
+    {
+        defaultOutputFileName = client->GetAppString(AP_vastr_DefaultOutputFileName);
+    }
+    advancedTab->lineEditOutputFileName->setText(QStringFromUtf16(defaultOutputFileName));
+
+    advancedTab->ccextractorDir->setText(QStringFromUtf16(client->GetSettingString(apset_app_ccextractor)));
 
     toggleAdvanced(expert_mode!=0);
+
+    if (first)
+    {
+        newSettings = false;
+        oldExpertMode = (expert_mode!=0);
+        oldOutputFileName = advancedTab->lineEditOutputFileName->text();
+    }
 }
 
 bool CSettingDialog::WriteSettings(bool& restartRequired)
@@ -253,17 +241,6 @@ bool CSettingDialog::WriteSettings(bool& restartRequired)
     client->SetSettingInt( apset_bdplus_DumpAlways , (protTab->check_DumpAlways->checkState() == Qt::Checked) ? 1 : 0 );
     client->SetSettingString(apset_app_Java,Utf16FromQString(protTab->javaDir->text()));
 
-    // stream
-    client->SetSettingInt(apset_stream_EnableUPNP , (streamTab->checkEnableUpnp->checkState() == Qt::Checked) ? 1 : 0 );
-
-    if ( (streamTab->comboAddress->currentIndex()==0) && (streamTab->comboAddress->currentText()==streamTab->comboAddress->itemText(0)) )
-    {
-        client->SetSettingString(apset_stream_BindIp,NULL);
-    } else {
-        client->SetSettingString(apset_stream_BindIp,Utf16FromQString(streamTab->comboAddress->currentText()));
-    }
-    client->SetSettingInt(apset_stream_BindPort,streamTab->spinPort->value());
-
     // advanced
     if (advancedTab->comboProfile->currentIndex())
     {
@@ -271,19 +248,40 @@ bool CSettingDialog::WriteSettings(bool& restartRequired)
     } else {
         client->SetSettingString(apset_app_DefaultProfileName,NULL);
     }
-    if (advancedTab->lineEditSelection->text() == QStringFromUtf16(client->GetProfileString(0,2)))
+    if (advancedTab->lineEditSelection->text() == QStringFromUtf16(client->GetAppString(AP_vastr_DefaultSelectionString)))
     {
         client->SetSettingString(apset_app_DefaultSelectionString,NULL);
     } else {
         client->SetSettingString(apset_app_DefaultSelectionString,Utf16FromQString(advancedTab->lineEditSelection->text()));
     }
-    client->SetSettingString(apset_app_dtshddec,Utf16FromQString(advancedTab->dtshddecDir->text()));
+    if (advancedTab->lineEditOutputFileName->text() == QStringFromUtf16(client->GetAppString(AP_vastr_DefaultOutputFileName)))
+    {
+        client->SetSettingString(apset_app_DefaultOutputFileName,NULL);
+    } else {
+        client->SetSettingString(apset_app_DefaultOutputFileName,Utf16FromQString(advancedTab->lineEditOutputFileName->text()));
+    }
+    client->SetSettingString(apset_app_ccextractor,Utf16FromQString(advancedTab->ccextractorDir->text()));
 
     restartRequired = (NULL!=client->GetAppString(AP_vastr_RestartRequired));
+
+    newSettings = true;
+    newExpertMode = (generalTab->check_ExpertMode->checkState() == Qt::Checked);
+    newOutputFileName = advancedTab->lineEditOutputFileName->text();
 
     // flush
     return client->SaveSettings();
 }
+
+bool CSettingDialog::redrawRequired()
+{
+    if (newSettings)
+    {
+        if (oldExpertMode!=newExpertMode) return true;
+        if (oldOutputFileName!=newOutputFileName) return true;
+    }
+    return false;
+}
+
 
 CIOTab::CIOTab(QWidget *parent) : QWidget(parent)
 {
@@ -401,37 +399,6 @@ CProtTab::CProtTab(QWidget *parent) : QWidget(parent)
     lay->addWidget(dvdBox);
     lay->addWidget(miscBox);
     lay->addWidget(javaDir);
-
-    lay->addStretch(2);
-    this->setLayout(lay);
-}
-
-CStreamTab::CStreamTab(QWidget *parent) : QWidget(parent)
-{
-    QGroupBox* box = new QGroupBox(UI_QSTRING(APP_IFACE_SETTINGS_IO_OPTIONS));
-
-    checkEnableUpnp = new QCheckBox();
-
-    comboAddress = new QComboBox();
-    comboAddress->addItem(QString(UI_QSTRING(APP_IFACE_SETTINGS_IO_AUTO)));
-    comboAddress->setEditable(true);
-
-    spinPort = new QSpinBox();
-    spinPort->setMinimum(1025);
-    spinPort->setMaximum(65535);
-
-    QGridLayout *b_lay = new QGridLayout();
-
-    b_lay->addWidget(createLabel(UI_QSTRING(APP_IFACE_SETTINGS_STREAM_ENABLE_UPNP)),0,0,Qt::AlignRight);
-    b_lay->addWidget(checkEnableUpnp,0,1);
-    b_lay->addWidget(createLabel(UI_QSTRING(APP_IFACE_SETTINGS_STREAM_BIND_IP)),1,0,Qt::AlignRight);
-    b_lay->addWidget(comboAddress,1,1);
-    b_lay->addWidget(createLabel(UI_QSTRING(APP_IFACE_SETTINGS_STREAM_BIND_PORT)),2,0,Qt::AlignRight);
-    b_lay->addWidget(spinPort,2,1);
-    box->setLayout(b_lay);
-
-    QBoxLayout *lay = new QVBoxLayout();
-    lay->addWidget(box);
 
     lay->addStretch(2);
     this->setLayout(lay);
@@ -621,6 +588,7 @@ CAdvancedTab::CAdvancedTab(CGUIApClient* ap_client,QWidget *parent) : QWidget(pa
     }
 
     lineEditSelection = new QLineEdit();
+    lineEditOutputFileName = new QLineEdit();
 
     QGridLayout *b_lay = new QGridLayout();
 
@@ -628,14 +596,18 @@ CAdvancedTab::CAdvancedTab(CGUIApClient* ap_client,QWidget *parent) : QWidget(pa
     b_lay->addWidget(comboProfile,0,1);
     b_lay->addWidget(createLabel(UI_QSTRING(APP_IFACE_SETTINGS_ADV_DEFAULT_SELECTION)),1,0,Qt::AlignRight);
     b_lay->addWidget(lineEditSelection,1,1);
+    b_lay->addWidget(createLabel(UI_QSTRING(APP_IFACE_SETTINGS_ADV_OUTPUT_FILE_NAME_TEMPLATE)),2,0,Qt::AlignRight);
+    b_lay->addWidget(lineEditOutputFileName,2,1);
     box->setLayout(b_lay);
 
-    dtshddecDir = new CDirSelectBox(NULL,CDirSelectBox::DirBoxFile,UI_QSTRING(APP_IFACE_SETTINGS_ADV_DTSHDDEC_PATH));
+    QString titleExternExe = UI_QSTRING(APP_IFACE_SETTINGS_ADV_EXTERN_EXEC_PATH);
+    ccextractorDir = new CDirSelectBox(ap_client,CDirSelectBox::DirBoxFile,
+        titleExternExe.arg(QLatin1String("ccextractor")));
 
     QBoxLayout *lay = new QVBoxLayout();
 
     lay->addWidget(box);
-    lay->addWidget(dtshddecDir);
+    lay->addWidget(ccextractorDir);
 
     lay->addStretch(2);
     this->setLayout(lay);

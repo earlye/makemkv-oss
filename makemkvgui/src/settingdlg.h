@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -97,19 +97,6 @@ public:
     CProtTab(QWidget *parent = 0);
 };
 
-class CStreamTab : public QWidget
-{
-    Q_OBJECT
-
-public:
-    QCheckBox*      checkEnableUpnp;
-    QComboBox*      comboAddress;
-    QSpinBox*       spinPort;
-
-public:
-    CStreamTab(QWidget *parent = 0);
-};
-
 class CAdvancedTab : public QWidget
 {
     Q_OBJECT
@@ -117,7 +104,8 @@ class CAdvancedTab : public QWidget
 public:
     QComboBox*      comboProfile;
     QLineEdit*      lineEditSelection;
-    CDirSelectBox*  dtshddecDir;
+    QLineEdit*      lineEditOutputFileName;
+    CDirSelectBox*  ccextractorDir;
 
 public:
     CAdvancedTab(CGUIApClient* ap_client,QWidget *parent = 0);
@@ -141,19 +129,26 @@ public: // tabs
     CLanguageTab* languageTab;
     CIOTab* ioTab;
     CDVDTab* dvdTab;
-    CStreamTab* streamTab;
     CProtTab* protTab;
     CAdvancedTab* advancedTab;
     bool advancedTabVisible;
+private:
+    bool newSettings;
+    bool oldExpertMode;
+    bool newExpertMode;
+    QString oldOutputFileName;
+    QString newOutputFileName;
 
 private:
     void toggleAdvanced(bool expert_mode);
 private slots:
     void SlotApply();
     void SlotExpertStateChanged(int state);
-public:
-    void ReadSettings();
+private:
+    void ReadSettings(bool first);
     bool WriteSettings(bool& restartRequired);
+public:
+    bool redrawRequired();
 };
 
 

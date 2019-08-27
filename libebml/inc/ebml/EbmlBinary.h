@@ -37,7 +37,7 @@
 #ifndef LIBEBML_BINARY_H
 #define LIBEBML_BINARY_H
 
-#include <cstring>
+#include <lgpl/stl.h>
 
 #include "EbmlTypes.h"
 #include "EbmlElement.h"

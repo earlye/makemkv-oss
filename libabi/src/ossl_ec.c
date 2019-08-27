@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -24,8 +24,15 @@
 #include <openssl/crypto.h>
 #include <openssl/opensslv.h>
 
-#if defined(OPENSSL_FIPS) && defined(OPENSSL_HAVE_INIT)
+#if defined(OPENSSL_FIPS)
+#include <openssl/rand.h>
+#include <openssl/evp.h>
+
+#if defined(OPENSSL_HAVE_INIT) \
+ || defined(RAND_F_RAND_INIT_FIPS) \
+ || defined(EVP_R_DISABLED_FOR_FIPS)
 #define UGLY_FEDORA // always disables EC with key size < 256 bits
+#endif
 #endif
 
 #if defined(OPENSSL_NO_EC) || defined(FORCE_OPENSSL_NO_EC) || defined(UGLY_FEDORA)
@@ -34,6 +41,11 @@
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #endif
+
+#if (OPENSSL_VERSION_NUMBER >= 0x10100006L) && !defined(PSSL_ECDSA_SIG_DEFINED) && !defined(LIBRESSL_VERSION_NUMBER)
+#define USE_ECDSA_SIG_ACCESS_API
+#endif
+
 
 /* BN */
 
@@ -140,9 +152,19 @@ OSSL_EC_GROUP *OSSL_EC_GROUP_new_curve_GFp(const OSSL_BIGNUM *p, const OSSL_BIGN
     return (OSSL_EC_GROUP *)grp;
 }
 
+void OSSL_EC_GROUP_free(OSSL_EC_GROUP *grp)
+{
+    EC_GROUP_free((EC_GROUP *)grp);
+}
+
 OSSL_EC_POINT *OSSL_EC_POINT_new(const OSSL_EC_GROUP *grp)
 {
     return (OSSL_EC_POINT *) EC_POINT_new((const EC_GROUP *)grp);
+}
+
+OSSL_EC_POINT *OSSL_EC_POINT_dup(const OSSL_EC_POINT *a,const OSSL_EC_GROUP *group)
+{
+    return (OSSL_EC_POINT *)EC_POINT_dup((const EC_POINT *)a,(const EC_GROUP *)group);
 }
 
 void OSSL_EC_POINT_free(OSSL_EC_POINT *point)
@@ -215,7 +237,7 @@ int OSSL_ECDSA_do_verify_rs(const unsigned char *dgst, int dgst_len,const OSSL_B
 {
     int r = -1;
 
-#if (OPENSSL_VERSION_NUMBER >= 0x10100006L)
+#ifdef USE_ECDSA_SIG_ACCESS_API
     {
         ECDSA_SIG *sig = ECDSA_SIG_new();
         if (!sig) return -1;
@@ -239,7 +261,7 @@ int OSSL_ECDSA_do_verify_rs(const unsigned char *dgst, int dgst_len,const OSSL_B
 
 const OSSL_BIGNUM* OSSL_ecdsa_sig_get_r(const OSSL_ECDSA_SIG* sig)
 {
-#if (OPENSSL_VERSION_NUMBER >= 0x10100006L)
+#ifdef USE_ECDSA_SIG_ACCESS_API
     {
         const BIGNUM* r;
         ECDSA_SIG_get0((const ECDSA_SIG*)sig,&r,NULL);
@@ -252,7 +274,7 @@ const OSSL_BIGNUM* OSSL_ecdsa_sig_get_r(const OSSL_ECDSA_SIG* sig)
 
 const OSSL_BIGNUM* OSSL_ecdsa_sig_get_s(const OSSL_ECDSA_SIG* sig)
 {
-#if (OPENSSL_VERSION_NUMBER >= 0x10100006L)
+#ifdef USE_ECDSA_SIG_ACCESS_API
     {
         const BIGNUM* s;
         ECDSA_SIG_get0((const ECDSA_SIG*)sig,NULL,&s);

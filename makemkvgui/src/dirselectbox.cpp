@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -161,13 +161,9 @@ void CDirSelectBox::SlotButtonPressed()
 
 void CDirSelectBox::setText(const QString &Text,bool AddMRU)
 {
-    if (AddMRU) {
-        addMRU(Text,true);
-        lineEditDir->setText(Text);
-        comboBoxDir->setCurrentIndex(0);
-    } else {
-        lineEditDir->setText(Text);
-    }
+    addMRU(Text,AddMRU,true);
+    lineEditDir->setText(Text);
+    comboBoxDir->setCurrentIndex(0);
     EmitValidChanged();
     emit SignalChanged();
 }
@@ -211,7 +207,7 @@ void CDirSelectBox::setMRU(const utf16_t* Data,const QString* AppendLast)
             if (AppendLast) {
                 path = append(path,AppendLast);
             }
-            addMRU(path,false);
+            addMRU(path,true,false);
         }
         if (*end==0) break;
         start = end+1;
@@ -260,7 +256,7 @@ void CDirSelectBox::setDirEnabled(bool Enabled)
     toolButtonAction->setEnabled(Enabled);
 }
 
-void CDirSelectBox::addMRU(const QString &Text,bool Top)
+void CDirSelectBox::addMRU(const QString &Text,bool Persistent,bool Top)
 {
     int count = comboBoxDir->count();
 
@@ -272,7 +268,7 @@ void CDirSelectBox::addMRU(const QString &Text,bool Top)
         if (Text == comboBoxDir->itemText(i)) {
             if (Top) {
                 comboBoxDir->removeItem(i);
-                comboBoxDir->insertItem(0,Text);
+                comboBoxDir->insertItem(0,Text,QVariant(Persistent));
             };
             added = true;
             break;
@@ -288,7 +284,7 @@ void CDirSelectBox::addMRU(const QString &Text,bool Top)
     }
 
     if (!added) {
-        comboBoxDir->insertItem(Top?0:comboBoxDir->count(),Text);
+        comboBoxDir->insertItem(Top?0:comboBoxDir->count(),Text,QVariant(Persistent));
     }
 }
 
@@ -301,6 +297,7 @@ QString CDirSelectBox::getMRU()
 
     for (int i=0;i<count;i++)
     {
+        if (!comboBoxDir->itemData(i).toBool()) continue;
         len += 1;
         len += comboBoxDir->itemText(i).length();
     }
@@ -313,6 +310,8 @@ QString CDirSelectBox::getMRU()
     for (int i=0;i<count;i++)
     {
         int slen;
+
+        if (!comboBoxDir->itemData(i).toBool()) continue;
 
         slen = comboBoxDir->itemText(i).length();
         *p++='*';

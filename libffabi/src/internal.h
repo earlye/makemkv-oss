@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -55,14 +55,20 @@ void *ffabi_memalign(size_t align, size_t size);
 void *ffabi_realloc(void *ptr, size_t size);
 void ffabi_free(void *ptr);
 
-void dca_log(void* ctx,const char* msg,unsigned int lineno);
-
 
 #if (LIBAVCODEC_VERSION_MAJOR < 53)
 #error "Can't use an ancient ffmpeg or libav"
 #endif
 
 #include "ffabicfg.h"
+
+#ifndef AV_CODEC_FLAG_GLOBAL_HEADER
+#define AV_CODEC_FLAG_GLOBAL_HEADER CODEC_FLAG_GLOBAL_HEADER
+#endif
+
+#ifndef FFABI_HAVE_AVCODEC_SEND_FRAME
+
+#define FFABI_AVCODEC_OLD_API 1
 
 #ifndef FFABI_HAVE_AVCODECID
 #define AVCodecID CodecID
@@ -79,6 +85,8 @@ static inline void av_frame_unref(AVFrame *frame)
 {
 }
 #endif
+
+#endif // FFABI_AVCODEC_OLD_API
 
 #ifndef FFABI_HAVE_AV_LOG_FORMAT_LINE
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,

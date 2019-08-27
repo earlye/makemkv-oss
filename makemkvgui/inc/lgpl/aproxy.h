@@ -13,7 +13,11 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <libmkv/libmkv.h>
-#include <vector>
+#include <lgpl/stl.h>
+
+#ifndef APROXY_STD
+#define APROXY_STD std
+#endif
 
 typedef uint16_t utf16_t;
 
@@ -123,7 +127,7 @@ typedef enum _AP_CMD
     apCallSetSettingString,
     apCallSaveSettings,
     apCallAppGetString,
-    apCallStartStreaming,
+    apdeprecated_CallStartStreaming,
     apCallBackupDisc,
     apCallGetInterfaceLanguage,
     apCallGetInterfaceLanguageData,
@@ -227,8 +231,8 @@ class AP_UiTitle : public AP_UiItem
     friend class CGUIApClient;
 private:
     AP_UiItem               m_ChaptersContainer;
-    std::vector<AP_UiItem>  m_Tracks;
-    std::vector<AP_UiItem>  m_Chapters;
+    APROXY_STD::vector<AP_UiItem>  m_Tracks;
+    APROXY_STD::vector<AP_UiItem>  m_Chapters;
 public:
     unsigned int GetTrackCount()
     {
@@ -256,7 +260,7 @@ class AP_UiTitleCollection : public AP_UiItem
 {
     friend class CGUIApClient;
 private:
-    std::vector<AP_UiTitle> m_Titles;
+    APROXY_STD::vector<AP_UiTitle> m_Titles;
 public:
     bool        m_Updated;
 public:
@@ -347,7 +351,6 @@ public:
     bool OpenTitleCollection(const utf16_t* Source,uint32_t Flags);
     bool EjectDisk(unsigned int Id);
     bool SaveAllSelectedTitlesToMkv();
-    bool StartStreaming();
     bool BackupDisc(unsigned int Id,const utf16_t* Folder,uint32_t Flags);
     bool GetInterfaceLanguage(unsigned int Id,utf16_t** Name,uint64_t** Param);
     const void* GetInterfaceLanguageData(unsigned int Id,unsigned int* Size1,unsigned int* Size2);

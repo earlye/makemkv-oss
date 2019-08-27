@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -16,6 +16,9 @@
 #include <lgpl/aproxy.h>
 
 #include "mainwnd.h"
+
+#define aversion aversion001
+extern "C" const unsigned int __cdecl aversion();
 
 #ifdef Q_OS_WIN
 #include <objbase.h>
@@ -80,6 +83,10 @@ int qMain(int argc, char **argv)
 #endif
 
     apc.AppExiting();
+
+#if defined(Q_OS_DARWIN) || defined(Q_OS_WIN)
+    aversion();
+#endif
 
     return r;
 }

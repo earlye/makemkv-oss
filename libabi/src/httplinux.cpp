@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -25,12 +25,14 @@
 #include <lgpl/httpabi.h>
 #include <lgpl/sstring.h>
 #include <lgpl/sysabi.h>
+#include <sys/ioctl.h>
 
 int HTTP_Download(const char* Url,const char* Agent,void* Buffer,uint32_t* Size)
 {
     int     pipe_fd[2],err;
-    char*   argv[10];
-    char    argv0[16],argv1[4],argv2[4],argv3[4],argv4[4],argv5[4],argv6[4];
+    char*   argv[12];
+    char    argv0[16],argv1[4],argv2[4],argv3[4],argv4[4],argv5[8],argv6[4];
+    char    argv8[4],argv9[12];
     char    *lagent,*lurl;
     ssize_t rd;
 
@@ -53,8 +55,10 @@ int HTTP_Download(const char* Url,const char* Agent,void* Buffer,uint32_t* Size)
     strcpy(argv5,"20"); argv[5]=argv5;
     strcpy(argv6,"-U"); argv[6]=argv6;
     argv[7]=lagent;
-    argv[8]=lurl;
-    argv[9]=NULL;
+    strcpy(argv8,"-o"); argv[8]=argv8;
+    strcpy(argv9,"/dev/null"); argv[9]=argv9;
+    argv[10]=lurl;
+    argv[11]=NULL;
 
     err = SYS_posix_launch(argv,0,pipe_fd[1],0,SYS_posix_envp());
 
@@ -65,9 +69,15 @@ int HTTP_Download(const char* Url,const char* Agent,void* Buffer,uint32_t* Size)
         return err;
     }
 
-    for (uint32_t i=0;i<(*Size);i++)
+    for (uint32_t i=0;i<(*Size);)
     {
-        rd = (int) read(pipe_fd[0],((char*)Buffer)+i,1);
+        int sz;
+
+        if (ioctl(pipe_fd[0], FIONREAD, &sz)!=0) sz=1;
+        if (sz<=0) sz=1;
+        if (sz>((*Size)-i)) sz=((*Size)-i);
+
+        rd = (int) read(pipe_fd[0],((char*)Buffer)+i,sz);
 
         if (rd==0)
         {
@@ -76,11 +86,12 @@ int HTTP_Download(const char* Url,const char* Agent,void* Buffer,uint32_t* Size)
             return 0;
         }
 
-        if (rd!=1)
+        if ((rd<0) || (rd>sz))
         {
             close(pipe_fd[0]);
             return errno|0x80000000;
         }
+        i += ((unsigned int)rd);
     }
 
     close(pipe_fd[0]);

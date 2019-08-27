@@ -35,7 +35,7 @@
 #ifndef LIBMATROSKA_BLOCK_H
 #define LIBMATROSKA_BLOCK_H
 
-#include <vector>
+#include <lgpl/stl.h>
 
 #include "matroska/KaxTypes.h"
 #include "ebml/EbmlBinary.h"

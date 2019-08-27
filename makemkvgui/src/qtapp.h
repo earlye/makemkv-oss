@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -65,7 +65,6 @@ static inline QFrame* createHLine()
 void AppendGrayBodyTag(QString &str,const QWidget *widget);
 
 QString FormatDiskFreeSpace(const utf16_t* FolderName);
-bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const utf16_t* DeviceNameString,const utf16_t* DiscNameString,const void* DiskData,unsigned int DiskDataSize,AP_DiskFsFlags FsFlags,AP_DriveState DriveState);
 
 QString GetInfo(AP_UiItem* item,AP_ItemAttributeId Id);
 QString BuildItemInfo(AP_UiItem *Item,bool expertMode);

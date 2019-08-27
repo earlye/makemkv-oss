@@ -1,7 +1,7 @@
 /*
     libMMBD - MakeMKV BD decryption API library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmmbd@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmmbd@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -44,12 +44,25 @@ static void __cdecl stderr_print(void* user_context,uint32_t flags,const char* m
     fflush(stderr);
 }
 
+#ifdef MMBD_WIN32_DEBUG
+#include <Windows.h>
+static void __cdecl windbg_print(void* user_context,uint32_t flags,const char* ,const uint16_t* messageW)
+{
+    OutputDebugStringW((LPCWSTR)messageW);
+    OutputDebugStringW(L"\n");
+}
+#endif
+
 static mmbd_output_proc_t get_output_proc()
 {
     if (getenv("MMBD_TRACE")) {
         return stderr_print;
     } else {
+#ifdef MMBD_WIN32_DEBUG
+        return windbg_print;
+#else
         return NULL;
+#endif
     }
 }
 
@@ -97,8 +110,41 @@ AACS_PUBLIC AACS * __cdecl aacs_open2(const char *path, const char *keyfile_path
     return (AACS*)mmbd;
 }
 
+static int __cdecl mmbd_aacs_read_file(void** user_data,const char* file_path,uint8_t* buffer,uint64_t offset,unsigned int size)
+{
+    void*           handle;
+    AACS_FILE_OPEN2 proc2;
+    AACS_FILE_H*    file = NULL;
+    int             r;
+
+    handle = user_data[0];
+    proc2 = (AACS_FILE_OPEN2)user_data[1];
+
+    if (NULL!=proc2)
+    {
+        file = (*proc2)(handle,file_path);
+    }
+    if (NULL==file)
+    {
+        return -1;
+    }
+    if (file->seek(file,offset,SEEK_SET)!=offset)
+    {
+        file->close(file);
+        return -1;
+    }
+
+    r = (int) file->read(file,buffer,size);
+
+    file->close(file);
+
+    return r;
+}
+
 AACS_PUBLIC int __cdecl aacs_open_device(AACS *aacs, const char *path, const char *keyfile_path)
 {
+    int err;
+
     if (keyfile_path) {
         const char* args[3];
 
@@ -109,8 +155,14 @@ AACS_PUBLIC int __cdecl aacs_open_device(AACS *aacs, const char *path, const cha
             return AACS_ERROR_NO_CONFIG;
         }
     }
+    if (NULL==path)
+    {
+        err = mmbd_open_autodiscover((MMBD*)aacs,mmbd_aacs_read_file);
+    } else {
+        err = mmbd_open((MMBD*)aacs,path);
+    }
 
-    if (mmbd_open((MMBD*)aacs,path)) {
+    if (err) {
         return AACS_ERROR_CORRUPTED_DISC;
     }
 
@@ -189,14 +241,17 @@ AACS_PUBLIC const uint8_t * __cdecl aacs_get_bdj_root_cert_hash(AACS *aacs)
     return (const uint8_t *)"mmbd_fake_aacs_get_bdj_root_cert_hash";
 }
 
-AACS_PUBLIC void __cdecl aacs_set_fopen(AACS *aacs, void *handle, void* p)
+AACS_PUBLIC void __cdecl aacs_set_fopen(AACS *aacs, void *handle, AACS_FILE_OPEN2 p)
 {
+    void** p_user_data = mmbd_user_data((MMBD*)aacs);
+    p_user_data[0] = handle;
+    p_user_data[1] = (void*)p;
 }
 
-static void* file_open = NULL;
-AACS_PUBLIC void* __cdecl aacs_register_file(void* p)
+static AACS_FILE_OPEN file_open = NULL;
+AACS_PUBLIC AACS_FILE_OPEN __cdecl aacs_register_file(AACS_FILE_OPEN p)
 {
-    void* old = file_open;
+    AACS_FILE_OPEN old = file_open;
     file_open = p;
     return old;
 }

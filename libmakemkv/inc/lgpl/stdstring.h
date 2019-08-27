@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -72,6 +72,7 @@ namespace buf
             const ref::string* pr = static_cast<const ref::string*>(p);
             return *pr;
         }
+        void format(size_t maxSize,const char* fmt, ...);
     };
 };
 

@@ -1,7 +1,7 @@
 /*
     libMMBD - MakeMKV BD decryption API library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmmbd@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmmbd@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -71,10 +71,13 @@ MMBD_PUBLIC const uint8_t*  __cdecl mmbd_get_disc_id(MMBD *mmbd);
 MMBD_PUBLIC int   __cdecl mmbd_decrypt_unit(MMBD *mmbd,uint32_t name_flags,uint64_t file_offset,uint8_t* buf);
 
 /* libaacs/libbdplus compatibility API*/
+typedef int  (__cdecl * mmbd_read_file_proc_t)(void** user_data,const char* file_path,uint8_t* buffer,uint64_t offset,unsigned int size);
 MMBD_PUBLIC void  __cdecl mmbd_libaacs_reset_cpsid(MMBD *mmbd);
 MMBD_PUBLIC const uint8_t*  __cdecl mmbd_get_encoded_ipc_handle(MMBD *mmbd);
 MMBD_PUBLIC int   __cdecl mmbd_get_busenc(MMBD *mmbd);
 MMBD_PUBLIC int   __cdecl mmbd_reinit(MMBD *mmbd,const char* argp[]);
+MMBD_PUBLIC void** __cdecl mmbd_user_data(MMBD *mmbd);
+MMBD_PUBLIC int   __cdecl mmbd_open_autodiscover(MMBD *mmbd,mmbd_read_file_proc_t read_file_proc);
 
 #ifdef __cplusplus
 }

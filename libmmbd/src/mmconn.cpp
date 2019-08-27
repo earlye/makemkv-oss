@@ -1,7 +1,7 @@
 /*
     libMMBD - MakeMKV BD decryption API library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmmbd@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmmbd@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,27 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+/*static*/ CMMBDConn* CMMBDConn::create_instance(mmbd_output_proc_t OutputProc,void* OutputUserContext)
+{
+    CMMBDConn* mmbd = (CMMBDConn*)malloc(sizeof(CMMBDConn));
+    if (!mmbd) {
+        return NULL;
+    }
+    new(mmbd)CMMBDConn(OutputProc,OutputUserContext);
+
+    return mmbd;
+}
+
+/*static*/ void CMMBDConn::destroy_instance(CMMBDConn* p)
+{
+    p->terminate();
+    p->~CMMBDConn();
+
+    memset((void*)p,0xbb,sizeof(CMMBDConn));
+    free(p);
+}
+
+
 CMMBDConn::CMMBDConn(mmbd_output_proc_t OutputProc,void* OutputUserContext)
     : m_output_proc(OutputProc)
     , m_output_context(OutputUserContext)
@@ -34,6 +55,7 @@ CMMBDConn::CMMBDConn(mmbd_output_proc_t OutputProc,void* OutputUserContext)
     , m_clip_count(0)
     , m_active(false)
     , m_job(false)
+    , m_scan_ctx(NULL)
 {
     m_apc.SetUiNotifier(this);
     encode_handle(m_ipc_handle,this);
@@ -41,6 +63,8 @@ CMMBDConn::CMMBDConn(mmbd_output_proc_t OutputProc,void* OutputUserContext)
     m_last_clip_info[0]=0xffffffff;
     m_auto_clip_info[0]=0;
     m_auto_clip_info[1]=0x0000ffff;
+
+    memset(m_user_data,0,sizeof(m_user_data));
 }
 
 CMMBDConn::~CMMBDConn()
@@ -103,23 +127,31 @@ bool CMMBDConn::initialize(const char* argp[])
     return convertArg(argp,&CMMBDConn::initializeU);
 }
 
-bool CMMBDConn::initializeU(const uint16_t* argp[])
+bool CMMBDConn::launch()
 {
-    const utf16_t*  p;
-    char            strbuf[300],*pd,*pe;
+    char            strbuf[300];
     unsigned int    err;
     const char*     errtxt;
 
     if (!m_apc.Init('C',":makemkvcon",&err)) {
-        switch(err) {
-            case 1:  errtxt="Can't locate makemkvcon executable"; break;
-            case 2:  errtxt="Version mismatch"; break;
-            default: errtxt="Unknown error"; break;
+        switch (err) {
+        case 1:  errtxt="Can't locate makemkvcon executable"; break;
+        case 2:  errtxt="Version mismatch"; break;
+        default: errtxt="Unknown error"; break;
         }
         sprintf_s(strbuf,sizeof(strbuf),"Failed to launch MakeMKV in background : %s",errtxt);
         error_message(err,strbuf);
         return false;
     }
+    return true;
+}
+
+bool CMMBDConn::initializeU(const uint16_t* argp[])
+{
+    const utf16_t*  p;
+    char            strbuf[300],*pd,*pe;
+
+    if (!launch()) return false;
 
     if (!m_apc.InitMMBD(argp)) {
         error_message(20,"MakeMKV initialization failed");
@@ -312,6 +344,10 @@ void CMMBDConn::ExitApp()
 
 void CMMBDConn::UpdateDrive(unsigned int Index,const utf16_t *DriveName,AP_DriveState DriveState,const utf16_t *DiskName,const utf16_t *DeviceName,AP_DiskFsFlags DiskFlags,const void* DiskData,unsigned int DiskDataSize)
 {
+    if ((NULL!=m_scan_ctx) && (AP_DriveStateInserted==DriveState))
+    {
+        m_scan_ctx->TestDisc(DeviceName,DiskData,DiskDataSize);
+    }
 }
 
 int CMMBDConn::ReportUiMessage(unsigned long Code,unsigned long Flags,const utf16_t* Text)
@@ -381,7 +417,7 @@ uint32_t* CMMBDConn::GetClipInfo(uint32_t Name)
     return m_clip_info+first*2;
 }
 
-void CMMBDConn::error_message(uint32_t error_code,const char* message)
+void CMMBDConn::message_worker(uint32_t error_code,const char* message)
 {
     if (!m_output_proc) return;
 
@@ -390,7 +426,7 @@ void CMMBDConn::error_message(uint32_t error_code,const char* message)
 
     utf8toutf16(buffer,len,message,strlen(message)+1);
 
-    (*m_output_proc)(m_output_context,error_code|MMBD_MESSAGE_FLAG_MMBD_ERROR,message,buffer);
+    (*m_output_proc)(m_output_context,error_code,message,buffer);
 }
 
 void CMMBDConn::reset_cpsid()
@@ -508,3 +544,127 @@ int CMMBDConn::get_busenc()
     return ((m_disc_flags&AP_MMBD_DISC_FLAG_BUSENC)!=0);
 }
 
+int CMMBDConn::open_auto(mmbd_read_file_proc_t read_file_proc)
+{
+    ScanContext scan_ctx(this->m_user_data,read_file_proc);
+
+    CMMBDConn* mmbd_scan = CMMBDConn::create_instance(this->m_output_proc,this->m_output_context);
+    if (!mmbd_scan) {
+        return -1;
+    }
+
+    warning_message(31,"No device path provided, scanning all inserted discs...");
+
+    if (!mmbd_scan->launch())
+    {
+        CMMBDConn::destroy_instance(mmbd_scan);
+        return -2;
+    }
+    mmbd_scan->m_active = true;
+
+    mmbd_scan->m_scan_ctx = &scan_ctx;
+    if (!mmbd_scan->m_apc.UpdateAvailableDrives())
+    {
+        mmbd_scan->m_scan_ctx = NULL;
+        CMMBDConn::destroy_instance(mmbd_scan);
+        return -31;
+    }
+
+    mmbd_scan->WaitJob();
+    mmbd_scan->WaitJob();
+
+    mmbd_scan->m_scan_ctx = NULL;
+    CMMBDConn::destroy_instance(mmbd_scan);
+
+    const uint16_t* locator = scan_ctx.GetLocator();
+    if (!locator)
+    {
+        error_message(30,"Failed to locate disc using user-specified file access callback");
+        return -30;
+    }
+
+    return openU(locator);
+}
+
+CMMBDConn::ScanContext::ScanContext(void** user_data,mmbd_read_file_proc_t file_proc)
+{
+    m_user_data = user_data;
+    m_file_proc = file_proc;
+    m_auto_locator[0]=0;
+    m_cache_mkb.size=0;
+    m_cache_cert0.size=0;
+}
+
+const uint16_t* CMMBDConn::ScanContext::GetLocator()
+{
+    if (0==m_auto_locator[0]) return NULL;
+    return m_auto_locator;
+}
+
+void CMMBDConn::ScanContext::TestDisc(const utf16_t *DeviceName,const void* DiskData,unsigned int DiskDataSize)
+{
+    DriveInfoItem item_mkb,item_cert0;
+
+    if (0!=m_auto_locator[0]) return;
+    if (0==DiskDataSize) return;
+
+    item_mkb.Id=0;
+    item_cert0.Id=0;
+
+    for (unsigned int offset=0; offset!=DiskDataSize; offset+=DriveInfoList_GetSerializedChunkSize(((const char*)DiskData) + offset))
+    {
+        DriveInfoItem   item;
+        DriveInfoList_GetSerializedChunkInfo(((const char*)DiskData) + offset,&item);
+        switch ((uint32_t)item.Id)
+        {
+        case 0x05102201:
+            item_mkb=item;
+            break;
+        case 0x05102203:
+            item_cert0=item;
+            break;
+        }
+    }
+
+    if (item_cert0.Id!=0)
+    {
+        if (false==CompareItem(&item_cert0,&m_cache_cert0,"/AACS/Content000.cer")) return;
+    }
+    if (item_mkb.Id!=0)
+    {
+        if (false==CompareItem(&item_mkb,&m_cache_mkb,"/AACS/MKB_RO.inf")) return;
+    } else {
+        return;
+    }
+
+    // found!
+    size_t len = utf16len(DeviceName);
+    if (len>(MaxLocatorLen-4)) return;
+
+    m_auto_locator[0]='d';
+    m_auto_locator[1]='e';
+    m_auto_locator[2]='v';
+    m_auto_locator[3]=':';
+    memcpy(m_auto_locator+4,DeviceName,(len+1)*sizeof(uint16_t));
+    return;
+}
+
+bool CMMBDConn::ScanContext::CompareItem(const DriveInfoItem* item,CMMBDConn::cache_entry_t* cache_entry,const char* file_name)
+{
+    unsigned int cmp_size = item->Size;
+
+    if (cmp_size>sizeof(cache_entry->data)) cmp_size = sizeof(cache_entry->data);
+
+    if ((cache_entry->size<cmp_size) || (cache_entry->offset!=0))
+    {
+        cache_entry->size = 0;
+        if (cmp_size!=this->m_file_proc(m_user_data,file_name,cache_entry->data,0,cmp_size))
+        {
+            return false;
+        }
+        cache_entry->offset = 0;
+        cache_entry->size = cmp_size;
+    }
+
+    return (0==memcmp(cache_entry->data,item->Data,cmp_size));
+}

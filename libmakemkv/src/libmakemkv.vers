@@ -28,7 +28,9 @@
   OSSL_EC_GROUP_set_generator;
   OSSL_EC_GROUP_get_order;
   OSSL_EC_GROUP_new_curve_GFp;
+  OSSL_EC_GROUP_free;
   OSSL_EC_POINT_new;
+  OSSL_EC_POINT_dup;
   OSSL_EC_POINT_free;
   OSSL_EC_POINT_mul;
   OSSL_EC_POINT_set_affine_coordinates_GFp;
@@ -53,12 +55,14 @@
   ZLIB_compress;
   ZLIB_uncompress;
   ZLIB_uncompress2;
+  ZLIB_uncompress3;
   ZLIB_sizeof_Z_STREAM;
   ZLIB_get_stream;
   ZLIB_set_stream;
   ZLIB_deflateInitBest;
   ZLIB_deflateAsync;
   ZLIB_deflateEnd;
+  ZLIB_deflateSetDictionary;
   ZLIB_get_uncompressed_size;
   ZLIB_get_uncompressed_size2;
   SYS_fstat;
@@ -69,6 +73,7 @@
   SYS_posix_getmyname;
   SYS_posix_envp;
   SYS_posix_launch;
+  SYS_posix_launch2;
   XPAT_ParserCreate;
   XPAT_ParserFree;
   XPAT_SetUserData;
@@ -87,7 +92,7 @@
   XPAT_ExpatVersion;
   LIBM_pow;
   ffm_init;
-  ffm_avcodec_version2;
+  ffm_avcodec_version3;
   ffm_audio_decode_init;
   ffm_audio_decode_close;
   ffm_audio_decode_put_data;
@@ -109,9 +114,5 @@
   ffm_mlp_checksum16;
   ffm_mpa_decode_header;
   ffm_get_channel_layout_string;
-  ffm_dcadec_context_create;
-  ffm_dcadec_context_destroy;
-  ffm_dcadec_put_data;
-  ffm_dcadec_get_frame;
   local: *;
 };

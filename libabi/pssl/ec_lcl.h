@@ -88,12 +88,12 @@ typedef struct ec_pre_comp_st EC_PRE_COMP;
 struct ec_group_st {
         struct ec_pre_comp_st *precomp;
 	EC_POINT *generator; /* optional */
-	BIGNUM order, cofactor;
+	BIGNUM *order, *cofactor;
 
 	/* The following members are handled by the method functions,
 	 * even if they appear generic */
 	
-	BIGNUM field; /* Field specification.
+	BIGNUM *field; /* Field specification.
 	               * For curves over GF(p), this is the modulus;
 	               * for curves over GF(2^m), this is the 
 	               * irreducible polynomial defining the field.
@@ -108,7 +108,7 @@ struct ec_group_st {
 	              * non-zero terms.
 	              */
 
-	BIGNUM a, b; /* Curve coefficients.
+	BIGNUM *a, *b; /* Curve coefficients.
 	              * (Here the assumption is that BIGNUMs can be used
 	              * or abused for all kinds of fields, not just GF(p).)
 	              * For characteristic  > 3,  the curve is defined
@@ -121,9 +121,8 @@ struct ec_group_st {
 
 	int a_is_minus3; /* enable optimized point arithmetics for special case */
 
-	void *field_data1; /* method-specific (e.g., Montgomery structure) */
-	void *field_data2; /* method-specific */
-	int (*field_mod_func)(BIGNUM *, const BIGNUM *, const BIGNUM *,	BN_CTX *); /* method-specific */
+	BN_MONT_CTX *field_data1; /* method-specific (e.g., Montgomery structure) */
+	BIGNUM	    *field_data2; /* method-specific */
 } /* EC_GROUP */;
 
 struct ec_key_st {
@@ -139,9 +138,9 @@ struct ec_point_st {
 	/* All members except 'meth' are handled by the method functions,
 	 * even if they appear generic */
 
-	BIGNUM X;
-	BIGNUM Y;
-	BIGNUM Z; /* Jacobian projective coordinates:
+	BIGNUM* X;
+	BIGNUM* Y;
+	BIGNUM* Z; /* Jacobian projective coordinates:
 	           * (X, Y, Z)  represents  (X/Z^2, Y/Z^3)  if  Z != 0 */
 	int Z_is_one; /* enable optimized point arithmetics for special case */
 } /* EC_POINT */;

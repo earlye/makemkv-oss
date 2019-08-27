@@ -36,7 +36,7 @@
 #if !defined(__GNUC__) || (__GNUC__ > 2)
 //#include <sstream>
 #endif // GCC2
-#include <stdexcept>
+#include <lgpl/stl.h>
 #include <lgpl/cassert>
 
 

@@ -1,7 +1,7 @@
 /*
     libDriveIo - MMC drive interrogation library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libdriveio@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libdriveio@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,26 @@ int snd_int(SOCKET s,unsigned long value);
 int recv_data(SOCKET s,void *data,size_t data_size);
 int recv_int(SOCKET s,unsigned long *value);
 int recv_char(SOCKET s,unsigned char *value);
+int recv_data(SOCKET s,void *data,size_t data_size,const uint8_t* have_data,size_t have_size);
+
+static const unsigned int MaxCdbLen = 0x1f;
+static const unsigned int MaxSmallDataLen = 0x2000;
+static const unsigned int MaxSenseDataLen = 64;
+
+static const unsigned int MaxDataBufferSizeOut = 1+2+MaxCdbLen+4+4+MaxSmallDataLen;
+static const unsigned int MaxDataBufferSizeIn = 2+1+1+MaxSenseDataLen+MaxSmallDataLen;
+static const unsigned int MaxDataBufferSize = MaxDataBufferSizeIn;
+
+#define TIPS_C_ASSERT(e)                 typedef char _TIPS_C_ASSERT__[(e)?1:-1]
+
+TIPS_C_ASSERT(MaxDataBufferSizeIn <= MaxDataBufferSize);
+TIPS_C_ASSERT(MaxDataBufferSizeOut <= MaxDataBufferSize);
+
+static inline void set_nodelay(SOCKET s)
+{
+    static const unsigned int value_one = 1;
+    setsockopt(s,IPPROTO_TCP,TCP_NODELAY,(const char*)&value_one,sizeof(value_one));
+}
 
 };
 

@@ -11,8 +11,6 @@
 #include <stdarg.h>
 #include <wchar.h>
 
-#ifndef ALREADY_HAVE_SSTRING_API
-
 #if defined(__GLIBC__) || defined(_darwin_)
 #define _vsnprintf vsnprintf
 #define _vsnwprintf vswprintf
@@ -22,9 +20,11 @@
 #define NEED_WIDE_SSTRING
 #endif
 
+#if !defined(ALREADY_HAVE_SSTRING_API) || defined(FORCE_SSTRING_API)
+
 #if defined(NEED_WIDE_SSTRING)
 
-int swprintf_s(wchar_t *buffer,size_t sizeOfBuffer,const wchar_t *format,...)
+int __cdecl swprintf_s(wchar_t *buffer,size_t sizeOfBuffer,const wchar_t *format,...)
 {
     if ( (sizeOfBuffer==0) || (buffer==NULL) || (format==NULL) )
     {
@@ -45,7 +45,7 @@ int swprintf_s(wchar_t *buffer,size_t sizeOfBuffer,const wchar_t *format,...)
 
     va_end(args);
 
-    if ( (rtn<0) || (rtn >= sizeOfBuffer) )
+    if ( (rtn<0) || ( ((size_t)rtn) >= sizeOfBuffer) )
     {
         buffer[0]=0;
         errno = EINVAL;
@@ -56,9 +56,9 @@ int swprintf_s(wchar_t *buffer,size_t sizeOfBuffer,const wchar_t *format,...)
     return rtn;
 }
 
-#endif
+#endif // NEED_WIDE_SSTRING
 
-int sprintf_s(char *buffer,size_t sizeOfBuffer,const char *format,...)
+int __cdecl sprintf_s(char *buffer,size_t sizeOfBuffer,const char *format,...)
 {
     if ( (sizeOfBuffer==0) || (buffer==NULL) || (format==NULL) )
     {
@@ -79,7 +79,7 @@ int sprintf_s(char *buffer,size_t sizeOfBuffer,const char *format,...)
 
     va_end(args);
 
-    if ( (rtn<0) || (rtn >= sizeOfBuffer) )
+    if ( (rtn<0) || ( ((size_t)rtn) >= sizeOfBuffer) )
     {
         buffer[0]=0;
         errno = EINVAL;
@@ -91,4 +91,14 @@ int sprintf_s(char *buffer,size_t sizeOfBuffer,const char *format,...)
 }
 
 #endif // ALREADY_HAVE_SSTRING_API
+
+int __cdecl tolower_ascii(int c)
+{
+    if ((c >= 'A') && (c <= 'Z'))
+    {
+        return (c + ('a' - 'A'));
+    } else {
+        return c;
+    }
+}
 

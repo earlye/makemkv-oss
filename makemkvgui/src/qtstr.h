@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -55,8 +55,13 @@ static inline void QStringFixLen(QString &str)
 
 static inline QString QStringFromConstUtf16(const utf16_t *str)
 {
-    int size = (int) utf16len(str);
-    return QString::fromRawData( (QChar*) str , size );
+    if (NULL==str)
+    {
+        return QString::fromLatin1("!bug!");
+    } else {
+        int size = (int)utf16len(str);
+        return QString::fromRawData((QChar*)str,size);
+    }
 }
 
 static inline QString QStringFromConstUtf16(const utf16_t *str,size_t size)

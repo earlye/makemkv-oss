@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -60,18 +60,20 @@ typedef enum _DiskType
 class CDriveInfo
 {
 public:
-    AP_DriveState   state;
-    AP_DiskFsFlags  fs_flags;
-    QString         name;
-    DiskType        disk_type;
-    QString         type;
-    QString         label;
-    QString         prot;
-    QString         right_info;
+    AP_DriveState   driveState;
+    AP_DiskFsFlags  diskFsFlags;
+    QString         driveName;
+    QString         driveSdfName;
+    DiskType        diskType;
+    QString         strType;
+    QString         strLabel;
+    QString         strProt;
+    QString         strInfo;
     bool            load;
 public:
     CDriveInfo();
     void Update(AP_DriveState DriveState,const utf16_t* DriveName,const utf16_t* DiskName,const utf16_t* DeviceName,AP_DiskFsFlags DiskFlags,const void* DiskData,unsigned int DiskDataSize);
+    bool FormatDriveDiskInfo(const utf16_t* DeviceNameString,const void* DiskData,unsigned int DiskDataSize);
     bool showOpen();
 };
 
@@ -99,7 +101,6 @@ private slots:
     void SlotCloseDisk();
     void SlotEjectDisk();
     void SlotSaveAllMkv();
-    void SlotStartStreaming();
     void SlotBackup();
     void SlotCancelJob();
     void SlotOpenDrive();
@@ -110,7 +111,6 @@ private slots:
     void SlotTreeItemCollapsed(QTreeWidgetItem *item);
     void SlotToggleTreeItem();
     void SlotSelectTreeItem();
-    void SlotSelectOnlyTreeItem();
     void SlotUnselectTreeItem();
     void SlotQuit();
     void SlotSettings();
@@ -216,7 +216,7 @@ private:
     QLabel* totalProgressLabel;
     QGrayTextViewer* itemInfoEdit;
     QLineEdit* itemInfoLine;
-    QComboBox* itemInfoCbox; // The Name/Filename/Metadata Language Combo
+    QComboBox* itemInfoCbox;
     QToolButton* itemInfoButton;
     QComboBox* profileCbox;
     QGroupBox* itemBox1;
@@ -265,7 +265,6 @@ private:
     QIcon*  ejectIcon;
     QIcon*  cancelIcon;
     QIcon*  infoIcon;
-    QIcon*  startStreamingIcon;
     QIcon*  backupIcon;
     QIcon*  revertIcon;
     QIcon*  clearLogIcon;
@@ -282,7 +281,6 @@ private:
 //    QAction *setOutputFolderAct;
     QAction *closeDiskAct;
     QAction *saveAllMkvAct;
-    QAction *startStreamingAct;
     QAction *backupAct;
     QAction *helppageAct;
     QAction *itemInfoRevertAct;
@@ -300,7 +298,6 @@ private:
     QAction *m_tree_toggle;
     QAction *m_tree_select;
     QAction *m_tree_unselect;
-    QAction *m_tree_selectonly;
 
     QAction* dvdToHdAct;
     QAction* hddvdToHdAct;

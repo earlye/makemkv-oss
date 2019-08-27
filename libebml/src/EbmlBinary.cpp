@@ -38,7 +38,6 @@
 #include <lgpl/cassert>
 
 #include "ebml/EbmlBinary.h"
-#include "ebml/StdIOCallback.h"
 
 START_LIBEBML_NAMESPACE
 

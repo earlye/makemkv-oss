@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -43,6 +43,7 @@ int             ZLIB_compress(uint8_t* dest,unsigned int* destLen,const uint8_t*
 unsigned int    ZLIB_compressBound(unsigned int sourceLen);
 int             ZLIB_uncompress(uint8_t* dest,unsigned int* destLen,const uint8_t* source,unsigned int sourceLen);
 int             ZLIB_uncompress2(uint8_t* dest,unsigned int* destLen,const uint8_t* source,unsigned int sourceLen,int windowBits);
+int             ZLIB_uncompress3(uint8_t* dest,unsigned int* destLen,const uint8_t* source,unsigned int sourceLen,int windowBits,const uint8_t* dict,unsigned int dictLen);
 int             ZLIB_get_uncompressed_size(unsigned int* destLen,const uint8_t* source,unsigned int sourceLen);
 int             ZLIB_get_uncompressed_size2(unsigned int* destLen,const uint8_t* source,unsigned int *sourceLen);
 
@@ -53,6 +54,7 @@ void            ZLIB_set_stream(ZLIB_Z_STREAM* zstream,int in,uint8_t* next,uint
 int             ZLIB_deflateInitBest(ZLIB_Z_STREAM* zstream,int windowBits);
 int             ZLIB_deflateAsync(ZLIB_Z_STREAM* zstream,int finish);
 int             ZLIB_deflateEnd(ZLIB_Z_STREAM* zstream);
+int             ZLIB_deflateSetDictionary(ZLIB_Z_STREAM* zstream,const uint8_t* dict,unsigned int dictLen);
 
 uint32_t        ZLIB_crc32(uint32_t crc,const uint8_t* buf,unsigned int len);
 

@@ -37,6 +37,11 @@
 
 START_LIBMATROSKA_NAMESPACE
 
-const ccc::string KaxCodeVersion = "1.4.4";
+const ccc::string KaxCodeVersion = "1.4.7";
+
+// Up to version 1.4.4 this library exported a build date string. As
+// this made the build non-reproducible, replace it by a placeholder to
+// remain binary compatible.
+const ccc::string KaxCodeDate = "Unknown";
 
 END_LIBMATROSKA_NAMESPACE

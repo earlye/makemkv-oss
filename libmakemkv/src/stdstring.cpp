@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,13 @@
 */
 #include <lgpl/stdstring.h>
 #include <lgpl/cassert>
+#include <stdio.h>
+#include <stdarg.h>
+#include <alloca.h>
+
+#ifdef _WIN32
+#define vsnprintf _vsnprintf
+#endif
 
 const char* buf::string::emptyString = "";
 
@@ -39,8 +46,23 @@ void buf::string::assign(const char* value)
     }
 }
 
+void buf::string::format(size_t maxSize, const char* fmt, ...)
+{
+    va_list lst;
+    char* tmp = (char*)alloca(maxSize + 1);
+
+    va_start(lst,fmt);
+    vsnprintf(tmp, maxSize, fmt, lst);
+    va_end(lst);
+
+    tmp[maxSize] = 0;
+
+    assign(tmp);
+}
+
 int MkvAssertHelper(const char* Message)
 {
-    throw mkv_error_exception(Message);
+    throw mkv_error_exception_unbuffered(Message);
     return 0;
 }
+

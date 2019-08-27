@@ -1,7 +1,7 @@
 /*
     libDriveIo - MMC drive interrogation library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libdriveio@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libdriveio@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,9 @@
 #include <stdint.h>
 #include <driveio/scsicmd.h>
 #include <driveio/driveio.h>
+#include <driveio/scsihlp.h>
 #include <errno.h>
 #include <string.h>
-#include "scsihlp.h"
 
 //
 // This table lists all specific query routines
@@ -197,6 +197,7 @@ static unsigned int CalculateRealBDDISize(const uint8_t* Buffer,unsigned int Len
         if (0==memcmp(ptr+8,"BDO",3)) struct_size=64;
         if (0==memcmp(ptr+8,"BDW",3)) struct_size=112;
         if (0==memcmp(ptr+8,"BDR",3)) struct_size=112;
+        if (0==memcmp(ptr+8,"BDU",3)) struct_size=64;
         if (0==struct_size) break;
         if (struct_size>rest)
         {

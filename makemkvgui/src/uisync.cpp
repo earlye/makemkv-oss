@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -16,8 +16,6 @@
 #include "mainwnd.h"
 #include "abutton.h"
 #include "image_defs.h"
-
-#include <stdio.h>
 
 class CCheckTreeItem : public QTreeWidgetItem
 {
@@ -301,15 +299,6 @@ void MainWnd::SlotUnselectTreeItem()
     SetSiblingsState(GetSelectedItem(titleTreeView),false);
 }
 
-void MainWnd::SlotSelectOnlyTreeItem()
-{
-    SetSiblingsState(GetSelectedItem(titleTreeView),false);
-    SlotToggleTreeItem();
-    itemInfoCbox->setCurrentIndex(1);
-    itemInfoLine->clear();
-    itemInfoLine->setFocus(Qt::OtherFocusReason);
-}
-
 void MainWnd::SlotToggleTreeItem()
 {
     CCheckTreeItem* item = GetSelectedItem(titleTreeView);
@@ -334,12 +323,10 @@ void MainWnd::Update_TitleInfo_from_app()
         saveFolderBox->selectDialogAction()->setEnabled(false);
         closeDiskAct->setEnabled(false);
         saveAllMkvAct->setEnabled(false);
-        startStreamingAct->setEnabled(false);
         RefreshEmptyFrame();
     } else {
         saveFolderBox->selectDialogAction()->setEnabled(true);
         closeDiskAct->setEnabled(true);
-        startStreamingAct->setEnabled(true);
         backupAct->setEnabled(false);
 
         Update_SaveFolderStatus();
@@ -364,7 +351,7 @@ int MainWnd::GetEmptyBoxDriveId()
     if (cmb_ndx>=0)
     {
         cur_ndx = emptyDriveBox->itemData(cmb_ndx).toInt();
-        if (DriveInfo[cur_ndx].state==AP_DriveStateNoDrive)
+        if (DriveInfo[cur_ndx].driveState==AP_DriveStateNoDrive)
         {
             cur_ndx = -1;
         }
@@ -579,7 +566,7 @@ void MainWnd::RefreshEmptyFrame()
         int good_ndx=-1;
         for (unsigned int i=0;i<AP_MaxCdromDevices;i++)
         {
-            if (DriveInfo[i].state!=AP_DriveStateInserted) continue;
+            if (DriveInfo[i].driveState!=AP_DriveStateInserted) continue;
             if (DriveInfo[i].showOpen()==false) continue;
             good_ndx=i;
             break;
@@ -589,7 +576,7 @@ void MainWnd::RefreshEmptyFrame()
         {
             for (unsigned int i=0;i<AP_MaxCdromDevices;i++)
             {
-                if (DriveInfo[i].state!=AP_DriveStateLoading) continue;
+                if (DriveInfo[i].driveState!=AP_DriveStateLoading) continue;
                 good_ndx=i;
                 break;
             }
@@ -606,9 +593,9 @@ void MainWnd::RefreshEmptyFrame()
     emptyDriveBox->clear();
     for (unsigned int i=0;i<AP_MaxCdromDevices;i++)
     {
-        if (DriveInfo[i].state==AP_DriveStateNoDrive) continue;
+        if (DriveInfo[i].driveState==AP_DriveStateNoDrive) continue;
 
-        emptyDriveBox->addItem(DriveInfo[i].name,QVariant(i));
+        emptyDriveBox->addItem(DriveInfo[i].driveName,QVariant(i));
         if (((int)i)==cur_ndx)
         {
             cmb_ndx = emptyDriveBox->count()-1;
@@ -651,12 +638,11 @@ void MainWnd::updateEmptyBox(int cur_ndx,bool boxEnabled)
         empty_dvd->setVisible(false);
         empty_dvd_box->setVisible(false);
     } else {
-      bool tryOpen = false;
         CDriveInfo* info = &DriveInfo[cur_ndx];
-        empty_type->setText(info->type);
-        empty_label->setText(info->label);
-        empty_prot->setText(info->prot);
-        empty_right_info->setHtmlBody(info->right_info);
+        empty_type->setText(info->strType);
+        empty_label->setText(info->strLabel);
+        empty_prot->setText(info->strProt);
+        empty_right_info->setHtmlBody(info->strInfo);
         empty_right_info->setEnabled(true);
         backupAct->setEnabled(false);
         empty_dvd->setVisible(false);
@@ -664,7 +650,7 @@ void MainWnd::updateEmptyBox(int cur_ndx,bool boxEnabled)
         empty_dvd_box->setChecked(false);
         empty_dvd_box->setEnabled(false);
 
-        switch(info->state)
+        switch(info->driveState)
         {
         case AP_DriveStateEmptyClosed:
             empty_big_btn->setDefaultAction(noneToHdAct);
@@ -693,8 +679,7 @@ void MainWnd::updateEmptyBox(int cur_ndx,bool boxEnabled)
             empty_big_btn->setEnabled(false);
             break;
         case AP_DriveStateInserted:
-	  tryOpen = true;
-            switch(info->disk_type)
+            switch(info->diskType)
             {
             case dtBluray:
                 empty_big_btn->setDefaultAction(blurayToHdAct);
@@ -725,9 +710,6 @@ void MainWnd::updateEmptyBox(int cur_ndx,bool boxEnabled)
             break;
         }
         emptyDriveBox->setEnabled(boxEnabled);
-	if (boxEnabled && tryOpen) {
-	  QTimer::singleShot(5000, this, SLOT(SlotOpenDriveBigBtn()));
-	}
     }
 }
 
@@ -851,12 +833,7 @@ void MainWnd::Update_TitleTree_from_app(bool setFolder)
         {
             saveFolderBox->clear();
             saveFolderBox->setMRU(m_app->GetSettingString(apset_path_DestDirMRU));
-	    QString text = QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputBaseName));
-	    DoProcessLogMessage(QString("settingString:apset_path_DestDirMRU:") + QStringFromUtf16(m_app->GetSettingString(apset_path_DestDirMRU)),0);
-	    DoProcessLogMessage("appString:AP_vastr_OutputBaseName:" + QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputBaseName)),0);
-	    DoProcessLogMessage("appString:AP_vastr_OutputFolderName:" + QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputFolderName)),0);
-	    DoProcessLogMessage("setting folder:" + text,0);
-            saveFolderBox->setText(text);
+            saveFolderBox->setText(QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputFolderName)));
         }
 
     } else {
@@ -921,27 +898,27 @@ void MainWnd::UpdateTitleCollection(bool setFolder)
 
 CDriveInfo::CDriveInfo()
 {
-    state = AP_DriveStateNoDrive;
+    driveState = AP_DriveStateNoDrive;
 }
 
 bool CDriveInfo::showOpen()
 {
-    if (state!=AP_DriveStateInserted) return false;
-    return (disk_type!=dtUnknown);
+    if (driveState!=AP_DriveStateInserted) return false;
+    return (diskType!=dtUnknown);
 }
 
 void CDriveInfo::Update(AP_DriveState DriveState,const utf16_t* DriveName,const utf16_t* DiskName,const utf16_t* DeviceName,AP_DiskFsFlags FsFlags,const void* DiskData,unsigned int DiskDataSize)
 {
-    AP_DriveState   prevState = state;
+    AP_DriveState   prevState = driveState;
 
-    state = DriveState;
-    name = QStringFromUtf16(DriveName);
-    label = QStringFromUtf16(DiskName);
+    driveState = DriveState;
+    driveName = QStringFromUtf16(DriveName);
+    strLabel = QStringFromUtf16(DiskName);
 
-    fs_flags = FsFlags;
+    diskFsFlags = FsFlags;
     load = false;
 
-    prot.clear();
+    strProt.clear();
     bool need_prot = false;
 
     switch(DriveState)
@@ -949,40 +926,40 @@ void CDriveInfo::Update(AP_DriveState DriveState,const utf16_t* DriveName,const 
     case AP_DriveStateNoDrive:
     case AP_DriveStateEmptyClosed:
     case AP_DriveStateEmptyOpen:
-        type=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_NODISC));
-        label.clear();
-        right_info.clear();
+        strType=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_NODISC));
+        strLabel.clear();
+        strInfo.clear();
         break;
     case AP_DriveStateLoading:
-        type=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_LOADING));
-        label=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_WAIT));
-        right_info=UI_QSTRING(APP_IFACE_DRIVEINFO_NONE);
+        strType=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_LOADING));
+        strLabel=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_WAIT));
+        strInfo=UI_QSTRING(APP_IFACE_DRIVEINFO_NONE);
         if (prevState==AP_DriveStateEmptyOpen) load = true;
         break;
     case AP_DriveStateUnmounting:
-        type=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_UNMOUNTING));
-        label=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_WAIT));
-        right_info=UI_QSTRING(APP_IFACE_DRIVEINFO_NONE);
+        strType=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_UNMOUNTING));
+        strLabel=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_WAIT));
+        strInfo=UI_QSTRING(APP_IFACE_DRIVEINFO_NONE);
         break;
     case AP_DriveStateInserted:
         // type
         if (0!=(FsFlags&AP_DskFsFlagBlurayFilesPresent))
         {
-            type=QLatin1String("Blu-ray");
-            disk_type=dtBluray;
+            strType=QLatin1String("Blu-ray");
+            diskType=dtBluray;
         } else {
             if (0!=(FsFlags&AP_DskFsFlagHdvdFilesPresent))
             {
-                type = QLatin1String("HD-DVD");
-                disk_type=dtHdvd;
+                strType = QLatin1String("HD-DVD");
+                diskType=dtHdvd;
             } else {
                 if (0!=(FsFlags&AP_DskFsFlagDvdFilesPresent))
                 {
-                    type = QLatin1String("DVD");
-                    disk_type=dtDvd;
+                    strType = QLatin1String("DVD");
+                    diskType=dtDvd;
                 } else {
-                    disk_type=dtUnknown;
-                    type=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_DATADISC));
+                    diskType=dtUnknown;
+                    strType=QString(UI_QSTRING(APP_IFACE_DRIVEINFO_DATADISC));
                 }
             }
         }
@@ -994,13 +971,15 @@ void CDriveInfo::Update(AP_DriveState DriveState,const utf16_t* DriveName,const 
 
     if (DriveState!=AP_DriveStateNoDrive)
     {
-        QString tprot;
-        if ( (0==DiskDataSize) || (false==FormatDriveDiskInfo(tprot,right_info,DeviceName,DiskName,DiskData,DiskDataSize,FsFlags,DriveState)) )
+        if ( (0==DiskDataSize) || (false==FormatDriveDiskInfo(DeviceName,DiskData,DiskDataSize)) )
         {
-            tprot.clear();
-            right_info=UI_QSTRING(APP_IFACE_DRIVEINFO_NONE);
+            strProt.clear();
+            strInfo=UI_QSTRING(APP_IFACE_DRIVEINFO_NONE);
         }
-        if (need_prot) prot = tprot;
+        if (!need_prot)
+        {
+            strProt.clear();
+        }
     }
 }
 

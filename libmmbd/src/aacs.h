@@ -35,6 +35,8 @@
 extern "C" {
 #endif
 
+#include "filesystem.h"
+
 /**
  * aacs_open_device() error codes
  */
@@ -196,9 +198,6 @@ AACS_PUBLIC uint32_t __cdecl aacs_get_bus_encryption(AACS *);
 struct aacs_basic_cci;
 
 AACS_PUBLIC struct aacs_basic_cci * __cdecl aacs_get_basic_cci(AACS *, uint32_t title);
-
-AACS_PUBLIC void __cdecl aacs_set_fopen(AACS *aacs, void *handle, void* p);
-AACS_PUBLIC void* __cdecl aacs_register_file(void* p);
 
 #ifdef __cplusplus
 }

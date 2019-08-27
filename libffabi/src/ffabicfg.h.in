@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,9 @@
 
 /* have avcodec_free_frame */
 #undef FFABI_HAVE_AVCODEC_FREE_FRAME
+
+/* have avcodec_send_frame */
+#undef FFABI_HAVE_AVCODEC_SEND_FRAME
 
 /* have av_frame_free */
 #undef FFABI_HAVE_AV_FRAME_FREE
@@ -51,4 +54,27 @@
 
 /* have <libavutil/channel_layout.h> */
 #undef FFABI_HAVE_AVUTIL_CHANNEL_LAYOUT_H
+
+/* use all codecs */
+#undef FFABI_HAVE_ALL_CODECS
+
+/* decoders */
+#undef FFABI_HAVE_DECODER_AC3
+#undef FFABI_HAVE_DECODER_EAC3
+#undef FFABI_HAVE_DECODER_AAC_LATM
+#undef FFABI_HAVE_DECODER_AAC_FIXED
+#undef FFABI_HAVE_DECODER_DCA
+#undef FFABI_HAVE_DECODER_MLP
+#undef FFABI_HAVE_DECODER_TRUEHD
+#undef FFABI_HAVE_DECODER_MP1
+#undef FFABI_HAVE_DECODER_MP2
+#undef FFABI_HAVE_DECODER_MP3
+#undef FFABI_HAVE_DECODER_FLAC
+
+/* encoders */
+#undef FFABI_HAVE_ENCODER_AC3
+#undef FFABI_HAVE_ENCODER_AC3_FIXED
+#undef FFABI_HAVE_ENCODER_AAC
+#undef FFABI_HAVE_ENCODER_LIBFDK_AAC
+#undef FFABI_HAVE_ENCODER_FLAC
 

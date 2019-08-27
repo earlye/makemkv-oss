@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -120,7 +120,7 @@ bool __cdecl set_world(IWorld* new_world,int world_name)
         i+=SYS_posix_getmyname(NULL,0);
         i+=SYS_posix_launch(NULL,0,0,0,NULL);
         i+=SYS_nstat(NULL,NULL);
-        i+=ffm_avcodec_version2();
+        i+=ffm_avcodec_version3();
         i+=(int)LIBM_pow(i,41);
 #endif
     }

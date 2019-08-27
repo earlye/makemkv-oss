@@ -29,9 +29,6 @@ typedef uint64_t useconds_t;
 #define geteuid() (0)
 #define getuid() (0)
 
-#define __msvc_mkdir(a) _mkdir(a)
-#define mkdir(a,b) __msvc_mkdir(a)
-
 int usleep(useconds_t usec);
 
 static unsigned int __inline sleep(unsigned int sec)

@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -13,6 +13,7 @@
 
 */
 #include "qtapp.h"
+#include "mainwnd.h"
 #include <driveio/driveio.h>
 #include <lgpl/smem.h>
 
@@ -25,7 +26,7 @@ static inline void append_item(QString &Qstr,const char *Str)
     append_const(Qstr,Str);
 }
 
-static QString FormatProtectionString(AP_DiskFsFlags FsFlags,const uint8_t* CopyrightInfo,const uint8_t* MkbSmall,const uint8_t* SvmSmall)
+static QString FormatProtectionString(AP_DiskFsFlags FsFlags,const uint8_t* CopyrightInfo,const uint8_t* MkbSmall,const uint8_t* CCSmall,const uint8_t* SvmSmall)
 {
     bool have_css=false,have_aacs=false,have_bdsvm=false,have_cprm=false;
     unsigned int aacs_ver = 0;
@@ -75,12 +76,49 @@ static QString FormatProtectionString(AP_DiskFsFlags FsFlags,const uint8_t* Copy
 
     if (have_css)   append_item(str,"CSS/CPPM");
     if (have_cprm)  append_item(str,"CPRM/CPPM");
-    if (have_aacs)  append_item(str,"AACS");
-    if (aacs_ver)
+    if (have_aacs)
     {
-        char    ver[8];
-        sprintf(ver," v%u",aacs_ver);
-        append_const(str,ver);
+        uint8_t version  = (MkbSmall != NULL) ? MkbSmall[5] : 4;
+        uint8_t category = (CCSmall != NULL) ? ((CCSmall[1]>>5)&3) : 0;
+
+        append_item(str, "AACS");
+        switch (version)
+        {
+        default:
+        case 3:
+        case 4:
+            break;
+        case 10:
+            append_const(str, "/II");
+            break;
+        case 20:
+            append_const(str, "2.0");
+            break;
+        case 21:
+            append_const(str, "2.1");
+            break;
+        }
+        if (version >= 20)
+        {
+            switch (category)
+            {
+            case 0:
+                append_const(str, "/C");
+                break;
+            case 1:
+                append_const(str, "/B");
+                break;
+            case 2:
+                append_const(str, "/A");
+                break;
+            }
+        }
+        if (aacs_ver)
+        {
+            char    ver[8];
+            sprintf(ver, " v%u", aacs_ver);
+            append_const(str, ver);
+        }
     }
     if (have_bdsvm) append_item(str,"BD+");
 
@@ -165,16 +203,21 @@ static void AppendTimestamp(QString& str,const uint8_t* Data)
     {
         append_const(str,fstr,10);
     } else {
-        append_const(str,fstr,19);
+        if ((fstr[17]!=0) && (fstr[17]!=0x20))
+        {
+            append_const(str,fstr,19);
+        } else {
+            append_const(str,fstr,16);
+        }
     }
 }
 
-bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const utf16_t* DeviceNameString,const utf16_t* DiscNameString,const void* DiskData,unsigned int DiskDataSize,AP_DiskFsFlags FsFlags,AP_DriveState DriveState)
+bool CDriveInfo::FormatDriveDiskInfo(const utf16_t* DeviceNameString,const void* DiskData,unsigned int DiskDataSize)
 {
     struct _items{
         DriveInfoItem   inquiry,drive_serial,firmware_date,firmware_string,current_profile;
         DriveInfoItem   copyright_info,dvd_physical_info,capacity,bd_disc_info,mkb_small;
-        DriveInfoItem   svm_small,aacs,ccert_small,aacs_high,timestamp;
+        DriveInfoItem   svm_small,aacs,ccert_small,aacs_high,timestamp,custom;
     } items;
 
     // extract all interesting items
@@ -230,6 +273,9 @@ bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const
         case 0x05102205:
             items.timestamp=item;
             break;
+        case 0x05102210:
+            items.custom=item;
+            break;
         default:
             break;
         }
@@ -238,9 +284,10 @@ bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const
     //
     // Firstly, protection info
     //
-    ProtectionString=FormatProtectionString(FsFlags,
+    this->strProt=FormatProtectionString(diskFsFlags,
         (items.copyright_info.Size>=8)?items.copyright_info.Data:NULL,
         (items.mkb_small.Size>=12)?items.mkb_small.Data:NULL,
+        (items.ccert_small.Size>=4)?items.ccert_small.Data:NULL,
         (items.svm_small.Size>=17)?items.svm_small.Data:NULL
         );
 
@@ -333,10 +380,27 @@ bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const
         append_const(str,"<br>");
     }
 
+    if ((items.custom.Size>1) && (items.custom.Data[items.custom.Size-1]==0))
+    {
+        QString customStr = QString::fromUtf8((const char*)items.custom.Data,items.custom.Size-1);
+        QStringList customList = customStr.split(QLatin1Char('\n'),QString::SkipEmptyParts);
+        if (customList.size()>=1)
+        {
+            append_const(str,"<br><b>");
+            str.append(customList.at(0));
+            append_const(str,"</b><br>");
+        }
+        for (int i=1; i<customList.size();i++)
+        {
+            str.append(customList.at(i));
+            append_const(str,"<br>");
+        }
+    }
+
     //
     // Disk info
     //
-    switch(DriveState)
+    switch(driveState)
     {
     case AP_DriveStateEmptyClosed:
     case AP_DriveStateEmptyOpen:
@@ -350,23 +414,20 @@ bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const
     case AP_DriveStateInserted:
         append_const(str,AP_UI_STRING(APP_SI_DISCINFO));
 
-        if (DiscNameString!=NULL)
+        if (!strLabel.isEmpty())
         {
-            if (DiscNameString[0])
+            const utf16_t* label = AP_UI_STRING(APP_IFACE_EMPTY_FRAME_LABEL);
+            size_t label_size = utf16len(label);
+            if ((label_size>2) && (label[label_size-2]==' ') && (label[label_size-1]==':'))
             {
-                const utf16_t* label = AP_UI_STRING(APP_IFACE_EMPTY_FRAME_LABEL);
-                size_t label_size = utf16len(label);
-                if ( (label_size>2) && (label[label_size-2]==' ') && (label[label_size-1]==':') )
-                {
-                    append_const(str,label,label_size-2);
-                    append_const(str,":");
-                } else {
-                    append_const(str,label);
-                }
-                append_const(str," ");
-                append_const(str,DiscNameString);
-                append_const(str,"<br>");
+                append_const(str,label,label_size-2);
+                append_const(str,":");
+            } else {
+                append_const(str,label);
             }
+            append_const(str," ");
+            str.append(strLabel);
+            append_const(str,"<br>");
         }
 
         if (items.timestamp.Size==20)
@@ -476,7 +537,8 @@ bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const
                 (
                 (0==cmemcmp(items.bd_disc_info.Data+4+8,"BDO",3)) ||
                 (0==cmemcmp(items.bd_disc_info.Data+4+8,"BDW",3)) ||
-                (0==cmemcmp(items.bd_disc_info.Data+4+8,"BDR",3))
+                (0==cmemcmp(items.bd_disc_info.Data+4+8,"BDR",3)) ||
+                (0==cmemcmp(items.bd_disc_info.Data+4+8,"BDU",3))
                 ) &&
                 true)
             {
@@ -487,6 +549,7 @@ bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const
                 case 1:     p="BD-ROM"; break;
                 case 2:     p="BD-R"; break;
                 case 4:     p="BD-RE"; break;
+                case 9:     p="BD-ROM UHD"; break;
                 default:    p=NULL; break;
                 }
                 if (NULL!=p)
@@ -506,6 +569,7 @@ bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const
                 {
                 case 1:     pw=AP_UI_STRING(APP_SI_DISCCBL25); break;
                 case 2:     pw=AP_UI_STRING(APP_SI_DISCCBL27); break;
+                case 5: // what is UHD channel bit length?
                 default:    pw=NULL; break;
                 }
                 if (NULL!=pw)
@@ -536,7 +600,7 @@ bool FormatDriveDiskInfo(QString& ProtectionString,QString& FullInfoString,const
     {
         qDebug("info string reallocated, size=%u",((unsigned int)str.size()));
     }
-    FullInfoString = str;
+    this->strInfo = str;
     return true;
 }
 

@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -20,6 +20,8 @@ uint64_t    get_free_space(const utf16_t* Folder);
 QString FormatDiskFreeSpace(const utf16_t* FolderName)
 {
     uint64_t free_sp = get_free_space(FolderName);
+
+    if (0==free_sp) return QString();
 
     char suf;
 

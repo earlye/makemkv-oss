@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ public:
     virtual void  __cdecl iso6392T(char* lang)=0;
 };
 
-#define WORLD_VER 23 // increment on changes
+#define WORLD_VER 24 // increment on changes
 #define WORLD_NAME ( (WORLD_VER<<8) | sizeof(IWorld) | 1 )
 
 #ifdef LGPL_WORLD_LOCAL

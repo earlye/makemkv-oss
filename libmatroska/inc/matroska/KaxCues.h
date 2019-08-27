@@ -35,7 +35,7 @@
 #ifndef LIBMATROSKA_CUES_H
 #define LIBMATROSKA_CUES_H
 
-#include <vector>
+#include <lgpl/stl.h>
 
 #include "matroska/KaxTypes.h"
 #include "ebml/EbmlMaster.h"

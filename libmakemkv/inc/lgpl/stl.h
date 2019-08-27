@@ -18,43 +18,14 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
-#include <libmkv/libmkv.h>
-#include <libmkv/internal.h>
+#ifndef LGPL_STL_H_INCLUDED
+#define LGPL_STL_H_INCLUDED
 
-#define LIBMKV_NAME "libmakemkv"
+#include <string.h>
+#include <memory>
+#include <algorithm>
+#include <exception>
+#include <vector>
+#include <stdexcept>
 
-#include <ver_num.h>
-
-#ifdef HAVE_ARCHDEFS_H
-#include <archdefs.h>
-#endif
-
-#ifdef HAVE_BUILDINFO_H
-#include <gen_buildinfo.h>
-#endif
-
-UTFstring GetLibraryVersionString()
-{
-    char ver[200];
-
-    strcpy(ver,LIBMKV_NAME);
-    strcat(ver," ");
-    strcat(ver,MAKEMKV_VERSION_NUMBER);
-    strcat(ver," (");
-    strcat(ver,EbmlCodeVersion);
-    strcat(ver,"/");
-    strcat(ver,KaxCodeVersion);
-    strcat(ver,")");
-#if defined(ARCH_NAME)
-    strcat(ver," " ARCH_NAME);
-#elif defined(BUILDINFO_ARCH_NAME)
-    strcat(ver," " BUILDINFO_ARCH_NAME );
-#else
-    strcat(ver," (custom build)");
-#endif
-
-    UTFstring rtn;
-    rtn.SetUTF8(ver);
-    return rtn;
-}
-
+#endif // LGPL_STL_H_INCLUDED

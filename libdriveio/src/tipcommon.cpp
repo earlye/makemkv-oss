@@ -1,7 +1,7 @@
 /*
     libDriveIo - MMC drive interrogation library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libdriveio@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libdriveio@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <driveio/scsicmd.h>
 #include <driveio/driveio.h>
+#include <driveio/error.h>
 #include <string.h>
 #include <errno.h>
 #include <lgpl/tcpip.h>
@@ -52,7 +53,7 @@ int AddrFromString(struct sockaddr_in* Addr,const char* Str)
         size_t addr_len = pcolon-Str;
         if (addr_len>name_len)
         {
-            return EINVAL;
+            return DRIVEIO_TCPIP_ERROR(EINVAL);
         }
         if (0==addr_len)
         {
@@ -75,13 +76,13 @@ int AddrFromString(struct sockaddr_in* Addr,const char* Str)
     err=getaddrinfo(addr_ip,addr_port,&hint,&adr_info);
     if (err!=0) return err;
 
-    if (NULL==adr_info) return EINVAL;
+    if (NULL==adr_info) return DRIVEIO_TCPIP_ERROR(EINVAL);
 
     if ( (adr_info->ai_family!=PF_INET) ||
         (adr_info->ai_socktype!=SOCK_STREAM) ||
         (adr_info->ai_protocol!=IPPROTO_TCP) )
     {
-        return EINVAL;
+        return DRIVEIO_TCPIP_ERROR(EINVAL);
     }
 
     memcpy(Addr,adr_info->ai_addr,sizeof(struct sockaddr_in));
@@ -102,9 +103,13 @@ int snd_data(SOCKET s,const void *data,size_t data_size)
     while(rest!=0)
     {
         r=send(s,dp,rest,0);
+        if (r==0)
+        {
+            return DRIVEIO_TCPIP_ERROR(EIO);
+        }
         if (r<0)
         {
-            return -EIO;
+            return DRIVEIO_TCPIP_ERROR(tcpip_errno());
         }
         rest-=r;
         dp+=r;
@@ -112,6 +117,45 @@ int snd_data(SOCKET s,const void *data,size_t data_size)
 
     return 0;
 }
+
+int recv_data(SOCKET s,void *data,size_t data_size)
+{
+    int r;
+    int rest = (int)data_size;
+    char *dp = (char*)data;
+    while (rest!=0)
+    {
+        r=recv(s,dp,rest,0);
+        if (r==0)
+        {
+            return DRIVEIO_TCPIP_ERROR(EIO);
+        }
+        if (r<0)
+        {
+            return DRIVEIO_TCPIP_ERROR(tcpip_errno());
+        }
+        rest-=r;
+        dp+=r;
+    }
+    return 0;
+}
+
+int recv_data(SOCKET s,void *data,size_t data_size,const uint8_t* have_data,size_t have_size)
+{
+    if (have_size>data_size)
+    {
+        return DRIVEIO_TCPIP_ERROR(ERANGE);
+    }
+
+    if (have_size!=0)
+    {
+        memcpy(data,have_data,have_size);
+    }
+
+    return recv_data(s,((uint8_t*)data) + have_size,data_size-have_size);
+}
+
+#if defined(TIPS_SERVER_ENABLE_V0_PROTOCOL) || defined(TIPS_CLIENT_ENABLE_V0_PROTOCOL)
 
 static unsigned int encode_int(uint8_t *buf,uint64_t val)
 {
@@ -176,25 +220,6 @@ int snd_char(SOCKET s,unsigned char value)
     return snd_data(s,&value,1);
 }
 
-int recv_data(SOCKET s,void *data,size_t data_size)
-{
-    int r;
-    int rest = (int)data_size;
-    char *dp = (char*)data;
-    while(rest!=0)
-    {
-        r=recv(s,dp,rest,0);
-        if (r<=0)
-        {
-            return -EIO;
-        }
-        rest-=r;
-        dp+=r;
-    }
-    return 0;
-}
-
-
 int recv_int(SOCKET s,unsigned long *value)
 {
     int err;
@@ -208,7 +233,7 @@ int recv_int(SOCKET s,unsigned long *value)
 
     if (buf[0]>(sizeof(buf)-1))
     {
-        return -ERANGE;
+        return DRIVEIO_TCPIP_ERROR(ERANGE);
     }
 
     err=recv_data(s,buf+1,buf[0]);
@@ -219,12 +244,12 @@ int recv_int(SOCKET s,unsigned long *value)
 
     uint64_t pv;
 
-    if (decode_int(buf,&pv)!= (1+buf[0]) )
+    if (decode_int(buf,&pv)!= (1+buf[0]))
     {
         return -ERANGE;
     }
 
-    *value = (unsigned long) pv;
+    *value = (unsigned long)pv;
 
     return 0;
 }
@@ -234,6 +259,6 @@ int recv_char(SOCKET s,unsigned char *value)
     return recv_data(s,value,1);
 }
 
-
+#endif // defined(TIPS_SERVER_ENABLE_V0_PROTOCOL) || defined(TIPS_CLIENT_ENABLE_V0_PROTOCOL)
 
 }; // namespace LibDriveIo

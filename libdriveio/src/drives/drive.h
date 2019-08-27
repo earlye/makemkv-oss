@@ -1,7 +1,7 @@
 /*
     libDriveIo - MMC drive interrogation library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libdriveio@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libdriveio@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,4 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <driveio/driveio.h>
-#include "../scsihlp.h"
-
+#include <driveio/scsihlp.h>

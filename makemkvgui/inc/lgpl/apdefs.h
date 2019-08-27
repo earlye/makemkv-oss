@@ -48,6 +48,8 @@ static const unsigned int AP_vastr_CurrentProfile=16;
 static const unsigned int AP_vastr_OpenFileFilter=17;
 static const unsigned int AP_vastr_WebSiteURL=18;
 static const unsigned int AP_vastr_OpenDVDFileFilter=19;
+static const unsigned int AP_vastr_DefaultSelectionString=20;
+static const unsigned int AP_vastr_DefaultOutputFileName=21;
 //
 typedef enum _AP_ItemAttributeId
 {
@@ -288,9 +290,9 @@ static const unsigned long APP_IFACE_SETTINGS_TAB_PROT=6166;
 static const unsigned long APP_IFACE_SETTINGS_TAB_ADVANCED=6172;
 static const unsigned long APP_IFACE_SETTINGS_ADV_DEFAULT_PROFILE=6173;
 static const unsigned long APP_IFACE_SETTINGS_ADV_DEFAULT_SELECTION=6174;
-static const unsigned long APP_IFACE_SETTINGS_ADV_FFMPEG_PATH=6175;
-static const unsigned long APP_IFACE_SETTINGS_ADV_DTSHDDEC_PATH=6176;
+static const unsigned long APP_IFACE_SETTINGS_ADV_EXTERN_EXEC_PATH=6175;
 static const unsigned long APP_IFACE_SETTINGS_PROT_JAVA_PATH=6177;
+static const unsigned long APP_IFACE_SETTINGS_ADV_OUTPUT_FILE_NAME_TEMPLATE=6178;
 static const unsigned long APP_IFACE_BACKUPDLG_TEXT_CAPTION=6137;
 static const unsigned long APP_IFACE_BACKUPDLG_TEXT=6138;
 static const unsigned long APP_IFACE_BACKUPDLG_FOLDER=6139;
@@ -393,20 +395,22 @@ typedef enum _ApSettingId
   apset_io_SingleDrive ,
   apset_app_ShowAVSyncMessages ,
   apset_bdplus_DumpAlways ,
-  apset_stream_EnableUPNP ,
-  apset_stream_BindIp ,
-  apset_stream_BindPort ,
+  apset_deprecated_s_EnableUPNP ,
+  apset_deprecated_s_BindIp ,
+  apset_deprecated_s_BindPort ,
   apset_screen_geometry ,
   apset_screen_state ,
   apset_app_DefaultProfileName ,
   apset_app_DefaultSelectionString ,
   apset_app_Java ,
-  apset_app_dtshddec ,
+  apset_app_ccextractor ,
   apset_app_SiteInfoString ,
   apset_path_OpenFile ,
   apset_path_DestDir ,
   apset_path_BackupDirMRU ,
   apset_path_DestDirMRU ,
+  apset_app_DefaultOutputFileName ,
+  apset_sdf_Stop ,
   apset_MaxValue
 } ApSettingId;
 

@@ -37,7 +37,7 @@
 #define LIBEBML_MASTER_H
 
 #include <lgpl/stdstring.h>
-#include <vector>
+#include <lgpl/stl.h>
 
 #include "EbmlTypes.h"
 #include "EbmlElement.h"
@@ -165,7 +165,6 @@ class EBML_DLL_API EbmlMaster : public EbmlElement {
 
     /*!
       \brief facility for Master elements to write only the head and force the size later
-      \warning
     */
     filepos_t WriteHead(IOCallback & output, int SizeLength, bool bWithDefault = false);
 
@@ -221,6 +220,12 @@ template <typename Type>
 Type & GetNextChild(EbmlMaster & Master, const Type & PastElt)
 {
   return *(static_cast<Type *>(Master.FindNextElt(PastElt, true)));
+}
+
+template <typename Type>
+Type * FindNextChild(EbmlMaster & Master, const Type & PastElt)
+{
+  return static_cast<Type *>(Master.FindNextElt(PastElt, false));
 }
 
 template <typename Type>

@@ -1,5 +1,5 @@
 
-LIBDRIVEIO_INC=-Ilibdriveio/inc
+LIBDRIVEIO_INC=libdriveio/inc
 
 LIBDRIVEIO_SRC=libdriveio/src/infolist.cpp libdriveio/src/scsihlp.cpp libdriveio/src/srlist.cpp \
   libdriveio/src/stdquery.cpp libdriveio/src/tipclient.cpp libdriveio/src/tipcommon.cpp libdriveio/src/tipserver.cpp \
@@ -7,7 +7,7 @@ LIBDRIVEIO_SRC=libdriveio/src/infolist.cpp libdriveio/src/scsihlp.cpp libdriveio
 
 LIBDRIVEIO_SRC_PUB=libdriveio/src/srlist.cpp
 
-LIBEBML_INC=-Ilibebml/inc
+LIBEBML_INC=libebml/inc
 
 LIBEBML_DEF=-DEBML_NO_READ -DEBML_STRICT_API -DEBML_DEBUG
 
@@ -17,7 +17,7 @@ LIBEBML_SRC=libebml/src/EbmlBinary.cpp libebml/src/EbmlContexts.cpp libebml/src/
   libebml/src/EbmlString.cpp libebml/src/EbmlSubHead.cpp libebml/src/EbmlUInteger.cpp libebml/src/EbmlUnicodeString.cpp \
   libebml/src/EbmlVersion.cpp libebml/src/EbmlVoid.cpp libebml/src/IOCallback.cpp libebml/src/MemIOCallback.cpp 
 
-LIBMATROSKA_INC=-Ilibmatroska/inc
+LIBMATROSKA_INC=libmatroska/inc
 
 LIBMATROSKA_SRC=libmatroska/src/FileKax.cpp libmatroska/src/KaxAttached.cpp libmatroska/src/KaxAttachments.cpp \
   libmatroska/src/KaxBlock.cpp libmatroska/src/KaxBlockData.cpp libmatroska/src/KaxCluster.cpp libmatroska/src/KaxContexts.cpp \
@@ -25,34 +25,27 @@ LIBMATROSKA_SRC=libmatroska/src/FileKax.cpp libmatroska/src/KaxAttached.cpp libm
   libmatroska/src/KaxInfoData.cpp libmatroska/src/KaxSeekHead.cpp libmatroska/src/KaxSegment.cpp \
   libmatroska/src/KaxTracks.cpp libmatroska/src/KaxVersion.cpp libmatroska/src/KaxSemantic.cpp
 
-SSTRING_INC=-Isstring/inc
+SSTRING_INC=sstring/inc
 
 SSTRING_SRC=sstring/src/sstring.cpp
 
-LIBABI_INC=-Ilibabi/inc
+LIBABI_INC=libabi/inc
 
 LIBABI_SRC=libabi/src/ossl_aes.c libabi/src/ossl_sha.c libabi/src/ossl_ec.c libabi/src/zlib.c libabi/src/xpat.c libabi/src/libm.c
 
 LIBABI_SRC_LINUX=libabi/src/httplinux.cpp makemkvgui/src/api_linux.cpp libabi/src/sys_linux.c makemkvgui/src/spawn_posix.cpp
 
-LIBFFABI_INC=-Ilibffabi/inc
+LIBFFABI_INC=libffabi/inc
 
 LIBFFABI_SRC=libffabi/src/ffabi.c libffabi/src/mlp.c libffabi/src/log.c libffabi/src/audio_convert.c \
     libffabi/src/audio_mix.c libffabi/src/audio_mix_matrix.c
 
-LIBDCADEC_SRC=libffabi/src/dcadec/bitstream.cpp libffabi/src/dcadec/core_decoder.cpp libffabi/src/dcadec/dca_context.cpp \
-    libffabi/src/dcadec/dmix_tables.cpp libffabi/src/dcadec/exss_parser.cpp libffabi/src/dcadec/idct_fixed.cpp \
-    libffabi/src/dcadec/interpolator.cpp libffabi/src/dcadec/interpolator_fixed.cpp libffabi/src/dcadec/interpolator_float.cpp \
-    libffabi/src/dcadec/ta.cpp libffabi/src/dcadec/xll_decoder.cpp libffabi/src/dcadec/idct_float.cpp \
-
-LIBDCADEC_DEF=-DDCA_LOG -DDCA_FFMALLOC
-
-LIBMAKEMKV_INC=-Ilibmakemkv/inc
+LIBMAKEMKV_INC=libmakemkv/inc
 
 LIBMAKEMKV_SRC=libmakemkv/src/ebmlwrite.cpp libmakemkv/src/libmkv.cpp libmakemkv/src/version.cpp libmakemkv/src/world.cpp \
     libmakemkv/src/stdstring.cpp
 
-MAKEMKVGUI_INC=-Imakemkvgui/inc
+MAKEMKVGUI_INC=makemkvgui/inc
 
 MAKEMKVGUI_SRC=makemkvgui/src/aboutbox.cpp makemkvgui/src/client.cpp makemkvgui/src/dirselectbox.cpp \
   makemkvgui/src/logic.cpp makemkvgui/src/logtext.cpp makemkvgui/src/main.cpp makemkvgui/src/nativefiledialog.cpp \
@@ -71,7 +64,7 @@ MAKEMKVGUI_SRC_LINUX=makemkvgui/src/api_posix.cpp makemkvgui/src/api_linux.cpp m
   makemkvgui/src/notify_linux.cpp makemkvgui/src/image_linux.cpp \
   tmp/image_data.o
 
-LIBMMBD_INC=-Ilibmmbd/inc
+LIBMMBD_INC=libmmbd/inc
 
 LIBMMBD_SRC=makemkvgui/src/client.cpp makemkvgui/src/marshall.cpp libmmbd/src/marmmbd.cpp libmmbd/src/nstring.cpp \
   libmmbd/src/mmbd.cpp libmmbd/src/mmconn.cpp libmmbd/src/mmbdipc.cpp libmmbd/src/utf8.cpp libmmbd/src/aacs.cpp \

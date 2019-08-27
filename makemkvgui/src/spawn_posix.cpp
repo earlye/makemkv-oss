@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -26,6 +26,11 @@
 #include <lgpl/sysabi.h>
 
 int SYS_posix_launch(char** argv,int fdstdin,int fdstdout,int fdstderr,char ** envp)
+{
+    return SYS_posix_launch2(NULL,argv,fdstdin,fdstdout,fdstderr,envp);
+}
+
+int SYS_posix_launch2(uintptr_t* ppid,char** argv,int fdstdin,int fdstdout,int fdstderr,char ** envp)
 {
     posix_spawn_file_actions_t  spawn_actions;
     posix_spawnattr_t           spawn_attr;
@@ -71,6 +76,11 @@ int SYS_posix_launch(char** argv,int fdstdin,int fdstdout,int fdstderr,char ** e
     }
 
     err = posix_spawn(&pid,argv[0],&spawn_actions,&spawn_attr,argv,envp);
+
+    if (ppid)
+    {
+        *ppid = (uintptr_t)pid;
+    }
 
     posix_spawn_file_actions_destroy(&spawn_actions);
     posix_spawnattr_destroy(&spawn_attr);

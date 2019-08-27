@@ -38,8 +38,7 @@
 #ifndef LIBEBML_ENDIAN_H
 #define LIBEBML_ENDIAN_H
 
-#include <algorithm>
-#include <cstring>
+#include <lgpl/stl.h>
 
 #include "EbmlConfig.h" // contains _ENDIANESS_
 

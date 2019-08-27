@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@ extern "C" {
 /* AES */
 typedef struct _OSSL_AES_KEY OSSL_AES_KEY;
 
-unsigned int OSSL_sizeof_AES_KEY();
+unsigned int OSSL_sizeof_AES_KEY(void);
 
 int OSSL_AES_set_encrypt_key(const unsigned char *userKey, const int bits,
 	OSSL_AES_KEY *key);
@@ -48,14 +48,21 @@ void OSSL_AES_cbc_decrypt(const unsigned char *in, unsigned char *out,
 	unsigned char *ivec);
 
 /* SHA */
-typedef struct _OSSL_SHA_CTX OSSL_SHA_CTX;
-#define OSSL_SHA_DIGEST_LENGTH  20
+typedef struct _OSSL_SHA_CTX    OSSL_SHA_CTX;
+typedef struct _OSSL_SHA256_CTX OSSL_SHA256_CTX;
+#define OSSL_SHA_DIGEST_LENGTH      20
+#define OSSL_SHA256_DIGEST_LENGTH   32
 
-unsigned int OSSL_sizeof_SHA_CTX();
+unsigned int OSSL_sizeof_SHA_CTX(void);
+unsigned int OSSL_sizeof_SHA256_CTX(void);
 
 int OSSL_SHA1_Init(OSSL_SHA_CTX *c);
 int OSSL_SHA1_Update(OSSL_SHA_CTX *c, const void *data, size_t len);
 int OSSL_SHA1_Final(unsigned char *md, OSSL_SHA_CTX *c);
+
+int OSSL_SHA256_Init(OSSL_SHA256_CTX *c);
+int OSSL_SHA256_Update(OSSL_SHA256_CTX *c, const void *data, size_t len);
+int OSSL_SHA256_Final(unsigned char *md, OSSL_SHA256_CTX *c);
 
 /* BN */
 typedef struct _OSSL_BIGNUM     OSSL_BIGNUM;
@@ -85,8 +92,10 @@ const OSSL_EC_POINT *OSSL_EC_GROUP_get0_generator(const OSSL_EC_GROUP *);
 int OSSL_EC_GROUP_set_generator(OSSL_EC_GROUP *, const OSSL_EC_POINT *generator, const OSSL_BIGNUM *order, const OSSL_BIGNUM *cofactor);
 int OSSL_EC_GROUP_get_order(const OSSL_EC_GROUP *, OSSL_BIGNUM *order, OSSL_BN_CTX *);
 OSSL_EC_GROUP *OSSL_EC_GROUP_new_curve_GFp(const OSSL_BIGNUM *p, const OSSL_BIGNUM *a, const OSSL_BIGNUM *b, OSSL_BN_CTX *);
+void OSSL_EC_GROUP_free(OSSL_EC_GROUP *grp);
 
 OSSL_EC_POINT *OSSL_EC_POINT_new(const OSSL_EC_GROUP *);
+OSSL_EC_POINT *OSSL_EC_POINT_dup(const OSSL_EC_POINT *a,const OSSL_EC_GROUP *group);
 void OSSL_EC_POINT_free(OSSL_EC_POINT *);
 int OSSL_EC_POINT_mul(const OSSL_EC_GROUP *, OSSL_EC_POINT *r, const OSSL_BIGNUM *, const OSSL_EC_POINT *, const OSSL_BIGNUM *, OSSL_BN_CTX *);
 int OSSL_EC_POINT_set_affine_coordinates_GFp(const OSSL_EC_GROUP *, OSSL_EC_POINT *,

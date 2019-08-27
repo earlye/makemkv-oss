@@ -1,7 +1,7 @@
 /*
     libMMBD - MakeMKV BD decryption API library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmmbd@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmmbd@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -31,12 +31,10 @@
 */
 MMBD_PUBLIC MMBD* __cdecl mmbd_create_context(void* user_context,mmbd_output_proc_t output_proc,const char* argp[])
 {
-    CMMBDConn* mmbd = (CMMBDConn*)malloc(sizeof(CMMBDConn));
+    CMMBDConn* mmbd = CMMBDConn::create_instance(output_proc,user_context);
     if (!mmbd) {
         return NULL;
     }
-
-    new(mmbd) CMMBDConn(output_proc,user_context);
 
     if (!mmbd->initialize(argp)) {
         free(mmbd);
@@ -55,11 +53,7 @@ MMBD_PUBLIC void  __cdecl mmbd_destroy_context(MMBD *mmbd)
 
     CMMBDConn* p = ((CMMBDConn*)mmbd);
 
-    p->terminate();
-    p->~CMMBDConn();
-
-    memset(mmbd,0xbb,sizeof(CMMBDConn));
-    free(mmbd);
+    CMMBDConn::destroy_instance(p);
 }
 
 /*  mmbd_get_engine_version_string
@@ -186,3 +180,28 @@ MMBD_PUBLIC int   __cdecl mmbd_reinit(MMBD *mmbd,const char* argp[])
     if (!((CMMBDConn*)mmbd)->reinitialize(argp)) return -2;
     return 0;
 }
+
+/*  mmbd_user_data
+    An internal support function for libaacs emulation
+*/
+MMBD_PUBLIC void** __cdecl mmbd_user_data(MMBD *mmbd)
+{
+    if (mmbd==NULL) return NULL;
+    return ((CMMBDConn*)mmbd)->user_data();
+}
+
+/*  mmbd_open_autodiscover
+    Opens a disc, same as mmbd_open except it tries to discover
+    device path automatically. This API is mainly for libaacs
+    emulation, do not use this function.
+    read_file_proc  - a user-provided function that can read
+                      any file from the disc.
+    Return value    - 0 if success, non-zero if failed
+*/
+MMBD_PUBLIC int __cdecl mmbd_open_autodiscover(MMBD *mmbd,mmbd_read_file_proc_t read_file_proc)
+{
+    if (mmbd==NULL) return -1;
+
+    return ((CMMBDConn*)mmbd)->open_auto(read_file_proc);
+}
+

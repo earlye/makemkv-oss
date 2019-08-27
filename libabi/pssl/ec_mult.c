@@ -87,6 +87,11 @@ struct ec_pre_comp_st {
 	int references;
 };
 
+static int PSSL_CRYPTO_add(int *p,int v)
+	{
+		*p += v;
+		return *p;
+	}
 
 static EC_PRE_COMP *ec_pre_comp_new(const EC_GROUP *group)
 	{
@@ -115,7 +120,7 @@ static EC_PRE_COMP *ec_pre_comp_dup(EC_PRE_COMP *src)
 	{
 	/* no need to actually copy, these objects never change! */
 
-	CRYPTO_add(&src->references, 1, CRYPTO_LOCK_EC_PRE_COMP);
+	PSSL_CRYPTO_add(&src->references, 1 /*, CRYPTO_LOCK_EC_PRE_COMP*/);
 
 	return src;
 	}
@@ -127,7 +132,7 @@ static void ec_pre_comp_free(EC_PRE_COMP *pre)
 	if (!pre)
 		return;
 
-	i = CRYPTO_add(&pre->references, -1, CRYPTO_LOCK_EC_PRE_COMP);
+	i = PSSL_CRYPTO_add(&pre->references, -1 /*, CRYPTO_LOCK_EC_PRE_COMP*/);
 	if (i > 0)
 		return;
 
@@ -149,7 +154,7 @@ static void ec_pre_comp_clear_free(EC_PRE_COMP *pre)
 	if (!pre)
 		return;
 
-	i = CRYPTO_add(&pre->references, -1, CRYPTO_LOCK_EC_PRE_COMP);
+	i = PSSL_CRYPTO_add(&pre->references, -1 /*, CRYPTO_LOCK_EC_PRE_COMP*/);
 	if (i > 0)
 		return;
 
@@ -169,6 +174,19 @@ static void ec_pre_comp_clear_free(EC_PRE_COMP *pre)
 	}
 
 
+static int PSSL_BN_read_d0(const BIGNUM *scalar, int bits)
+	{
+	int i,v=0;
+
+	for (i=0;i<bits;i++)
+		{
+		if (BN_is_bit_set(scalar,i))
+			{
+			v |= (1<<i);
+			}
+		}
+	return v;
+	}
 
 
 /* Determine the modified width-(w+1) Non-Adjacent Form (wNAF) of 'scalar'.
@@ -215,7 +233,7 @@ static signed char *compute_wNAF(const BIGNUM *scalar, int w, size_t *ret_len)
 		sign = -1;
 		}
 
-	if (scalar->d == NULL || scalar->top == 0)
+	if (BN_is_zero(scalar))
 		{
 		ECerr(EC_F_COMPUTE_WNAF, ERR_R_INTERNAL_ERROR);
 		goto err;
@@ -230,7 +248,7 @@ static signed char *compute_wNAF(const BIGNUM *scalar, int w, size_t *ret_len)
 		ECerr(EC_F_COMPUTE_WNAF, ERR_R_MALLOC_FAILURE);
 		goto err;
 		}
-	window_val = scalar->d[0] & mask;
+	window_val = PSSL_BN_read_d0(scalar,9) & mask;
 	j = 0;
 	while ((window_val != 0) || (j + w + 1 < len)) /* if j+w+1 >= len, window_val will not increase */
 		{

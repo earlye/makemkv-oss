@@ -1,7 +1,7 @@
 /*
     libDriveIo - MMC drive interrogation library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libdriveio@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libdriveio@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -48,11 +48,13 @@ typedef enum _DriveInfoCategory {
 // 31......24 23..16 16.0
 // [Category] [Type] [Id]
 //
-typedef enum _DriveInfoId
+typedef uint32_t DriveInfoId;
+typedef enum _DriveInfoId_enum
 {
     // dicat_Invalid
     diid_InvalidValue=0,
     diid_DriveioTag=(dicat_Invalid<<24) + (1<<16),
+    diid_DriveioPad=(dicat_Invalid<<24) + (2<<16),
 
     // dicat_DriveStandard
     diid_InquiryData=(dicat_DriveStandard<<24)+(0<<16),
@@ -89,9 +91,10 @@ typedef enum _DriveInfoId
     diid_Aacs_BindingNonce=(dicat_DiscSpecific<<24)+(0<<16)+0x7e,
 
     diidMaxValue
-} DriveInfoId;
+} DriveInfoId_enum;
 
-typedef enum _DriveIoQueryType
+typedef unsigned int DriveIoQueryType;
+typedef enum _DriveIoQueryType_enum
 {
     // query
     diq_QueryAllInfo=0,
@@ -103,7 +106,7 @@ typedef enum _DriveIoQueryType
     dia_UnlockMediaAccess=100,
 
     diq_MaxValue
-} DriveIoQueryType;
+} DriveIoQueryType_enum;
 
 //
 // Structs
@@ -152,7 +155,8 @@ size_t          DIO_CDECL   DriveInfoList_GetCount(DIO_INFOLIST List);
 void            DIO_CDECL   DriveInfoList_GetItem(DIO_INFOLIST List,size_t Index,DriveInfoItem *Item);
 int             DIO_CDECL   DriveInfoList_GetItemById(DIO_INFOLIST List,DriveInfoId Id,DriveInfoItem *Item);
 int             DIO_CDECL   DriveInfoList_AddItem(DIO_INFOLIST List,DriveInfoId Id,const void* Data,size_t Size);
-size_t          DIO_CDECL   DriveInfoList_Serialize(DIO_INFOLIST List,void* Buffer,size_t BufferSize);
+int             DIO_CDECL   DriveInfoList_AddOrUpdateItem(DIO_INFOLIST List, DriveInfoId Id, const void* Data, size_t Size);
+size_t          DIO_CDECL   DriveInfoList_Serialize(DIO_INFOLIST List, void* Buffer, size_t BufferSize);
 DIO_INFOLIST    DIO_CDECL   DriveInfoList_Deserialize(const void* Buffer,size_t BufferSize);
 size_t          DIO_CDECL   DriveInfoList_GetSerializedChunkSize(const void* Buffer);
 void            DIO_CDECL   DriveInfoList_GetSerializedChunkInfo(const void* Buffer,DriveInfoItem *Item);
@@ -201,7 +205,7 @@ class CDriveInfoList
 private:
     DIO_INFOLIST    m_list;
 public:
-    inline CDriveInfoList(DIO_INFOLIST List) : m_list(NULL)
+    inline CDriveInfoList(DIO_INFOLIST List) : m_list(List)
     {
     }
     inline void Destroy()

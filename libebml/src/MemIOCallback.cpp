@@ -32,8 +32,8 @@
   \author Jory Stone <jcsston @ toughguy.net>
 */
 
-#include "ebml/MemIOCallback.h"
 #include "ebml/Debug.h"
+#include "ebml/MemIOCallback.h"
 #include "ebml/EbmlConfig.h"
 
 START_LIBEBML_NAMESPACE

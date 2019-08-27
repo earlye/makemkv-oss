@@ -1,7 +1,7 @@
 /*
     libMakeMKV - MKV multiplexer library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libmkv@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libmkv@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -19,13 +19,7 @@
 
 */
 #include <libmkv/libmkv.h>
-#include <libmkv/internal.h>
-#include <libmkv/ebmlwrite.h>
-#include <lgpl/cassert>
-#include <exception>
-#include <lgpl/sstring.h>
 #include <lgpl/world.h>
-#include <vector>
 #include <lgpl/apdefs.h>
 
 #ifndef __STDC_FORMAT_MACROS
@@ -33,13 +27,19 @@
 #endif
 #include <inttypes.h>
 
+#include <lgpl/stl.h>
+#include <libmkv/internal.h>
+#include <libmkv/ebmlwrite.h>
+#include <lgpl/cassert>
+#include <lgpl/sstring.h>
+
 #define TIMECODE_SCALE              1000000
 #define MAX_TIMECODE_SIZE_BYTES     6
 #define MAX_TIMECODE                ((((uint64_t)1)<<(8*MAX_TIMECODE_SIZE_BYTES))-1)
 #define AUTO_DURATION_TIMECODE      4500000000ll
 #define BAD_TIMECODE                ((1ll<<62)+1)
 
-#define CNZ(x) if (!(x)) { throw mkv_error_exception( "Error in " #x ); };
+#define CNZ(x) if (!(x)) { ThrowMkvExceptionUnbuffered( "Error in " #x ); };
 
 template <class Tv,class Te>
 static inline Tv& GetChild(EbmlMaster *node)
@@ -52,6 +52,11 @@ static inline Tv& GetChild(EbmlMaster &node)
 {
     return GetChild<Tv,Te>(&node);
 }
+
+static void ThrowMkvExceptionUnbuffered(const char* Msg)
+{
+    throw mkv_error_exception_unbuffered(Msg);
+};
 
 static inline int64_t ScaleTimecode(int64_t UnscaledTimecode)
 {
@@ -398,7 +403,7 @@ public:
             have |= 2;
             for (unsigned int i=0;i<info.source_id[0];i++)
             {
-                sprintf(buffer+i*2,"%02X",info.source_id[i+1]);
+                sprintf_s(buffer+i*2,(sizeof(buffer)-(i*2)),"%02X",info.source_id[i+1]);
             }
             AddSimple(tag,names[5],buffer);
         }
@@ -804,6 +809,7 @@ static void MkvCreateFileInternal(IOCallback &File,IMkvTrack *Input,IMkvTitleInf
     int64_t max_duration=0;
     uint64_t prg_val=0;
     int64_t frame_end;
+    unsigned int clusterlen = (track_info.size() > 64) ? 5 : 4;
 
     while(true)
     {
@@ -959,7 +965,7 @@ static void MkvCreateFileInternal(IOCallback &File,IMkvTrack *Input,IMkvTitleInf
             {
                 CNZ(curr_cluster->WriteHead(File, 3));
             } else {
-                CNZ(curr_cluster->WriteHead(File, 4));
+                CNZ(curr_cluster->WriteHead(File, clusterlen));
             }
 
             cluster_timecode = GetClusterTimecode(Input);
@@ -1016,16 +1022,10 @@ static void MkvCreateFileInternal(IOCallback &File,IMkvTrack *Input,IMkvTitleInf
             fetch_frames = 1;
         }
 
-        if (false==stream->FetchFrames(fetch_frames,true))
-        {
-            throw mkv_error_exception("Error while reading input");
-        }
-
-        frames_count = stream->GetAvailableFramesCount();
-
+        frames_count = fetch_frames;
         if (frames_count>lacing_frames) frames_count=lacing_frames;
 
-        MKV_ASSERT(frames_count>0);
+        MKV_ASSERT(stream->GetAvailableFramesCount()>0);
 
         if (frames_count>1)
         {
@@ -1039,6 +1039,20 @@ static void MkvCreateFileInternal(IOCallback &File,IMkvTrack *Input,IMkvTitleInf
         for (unsigned int i=1;i<frames_count;i++)
         {
             prev_frame = frame;
+
+            if (stream->GetAvailableFramesCount()<(i+1))
+            {
+                if (false==stream->FetchFrames(i+1,true))
+                {
+                    throw mkv_error_exception("Error while reading input");
+                }
+                if (stream->GetAvailableFramesCount()<(i+1))
+                {
+                    frames_count=i;
+                    break;
+                }
+            }
+
             frame=stream->PeekFrame(i);
             if ( (frame->keyframe()!=frame_keyframe) || frame->cluster_start() )
             {

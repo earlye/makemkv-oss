@@ -1,7 +1,7 @@
 /*
     MakeMKV GUI - Graphics user interface application for MakeMKV
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <makemkvgui@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <makemkvgui@makemkv.com>
 
     You may use this file in accordance with the end user license
     agreement provided with the Software. For licensing terms and
@@ -350,10 +350,7 @@ void MainWnd::SlotOpenDriveBigBtn()
 {
     int Index = GetEmptyBoxDriveId();
     bool manualOpen = empty_dvd_box->isChecked() && iface_ExpertMode;
-    if (Index<0) {
-      printf("SlotOpenDriveBigBtn. Index<0, ignoring\n");
-      return;
-    }
+    if (Index<0) return;
 
     m_app->OpenCdDisk(Index,manualOpen?1:0);
     m_CurrentlyOpenedDisk=Index;
@@ -380,11 +377,6 @@ static QString NBabsoluteFilePath(QFileInfo& info)
     return info.absoluteFilePath();
 }
 
-void MainWnd::SlotStartStreaming()
-{
-    m_app->StartStreaming();
-}
-
 void MainWnd::SlotBackup()
 {
     CBackupDialog dlg(m_app,mainIcon,this);
@@ -392,7 +384,7 @@ void MainWnd::SlotBackup()
     int ndx = GetEmptyBoxDriveId();
     if (ndx<0) return;
 
-    QString name = DriveInfo[ndx].label;
+    QString name = DriveInfo[ndx].strLabel;
 
     dlg.backupDir->setAppendName(&name);
     dlg.backupDir->setText(QStringFromUtf16(m_app->GetAppString(AP_vastr_OutputBaseName)) + QLatin1String("/backup/") + name,true);
@@ -463,7 +455,6 @@ void MainWnd::createIcons()
     settingsIcon = createIconPixmaps(AP_IMG_CONFIGURE,AP_IMG_CONFIGURE_COUNT);
     ejectIcon = createIconPixmaps(AP_IMG_EJECT,AP_IMG_EJECT_COUNT);
     cancelIcon = createIconPixmaps(AP_IMG_STOP,AP_IMG_STOP_COUNT);
-    startStreamingIcon = createIconPixmaps(AP_IMG_STREAM,AP_IMG_STREAM_COUNT);
     backupIcon = createIconPixmaps(AP_IMG_BACKUP,AP_IMG_BACKUP_COUNT);
     revertIcon = createIconPixmaps(AP_IMG_REVERT,AP_IMG_REVERT_COUNT);
     clearLogIcon = createIconPixmaps(AP_IMG_CLEARLOG,AP_IMG_CLEARLOG_COUNT);
@@ -509,11 +500,6 @@ void MainWnd::createActions()
     saveAllMkvAct->setStatusTip(UI_QSTRING(APP_IFACE_ACT_SAVEALLMKV_STIP));
     setPlainMenuRole(saveAllMkvAct);
     connect(saveAllMkvAct, SIGNAL(triggered()), this, SLOT(SlotSaveAllMkv()));
-
-    startStreamingAct = new QAction( *startStreamingIcon, UI_QSTRING(APP_IFACE_ACT_STREAMING_NAME), this);
-    startStreamingAct->setStatusTip(UI_QSTRING(APP_IFACE_ACT_STREAMING_STIP));
-    setPlainMenuRole(startStreamingAct);
-    connect(startStreamingAct, SIGNAL(triggered()), this, SLOT(SlotStartStreaming()));
 
     backupAct = new QAction( *backupIcon , UI_QSTRING(APP_IFACE_ACT_BACKUP_NAME), this);
     backupAct->setStatusTip(UI_QSTRING(APP_IFACE_ACT_BACKUP_STIP));
@@ -624,7 +610,6 @@ void MainWnd::createMenus()
     fileMenu->addAction(ejectAct);
     fileMenu->addAction(saveFolderBox->selectDialogAction());
     fileMenu->addAction(saveAllMkvAct);
-    fileMenu->addAction(startStreamingAct);
     fileMenu->addAction(backupAct);
     fileMenu->addSeparator();
     fileMenu->addAction(quitAct);
@@ -659,7 +644,6 @@ void MainWnd::createToolBars()
     mainToolBar->addAction(openFilesAct);
     mainToolBar->addAction(backupAct);
     mainToolBar->addAction(saveAllMkvAct);
-    mainToolBar->addAction(startStreamingAct);
     mainToolBar->addAction(settingsAct);
     mainToolBar->addAction(ejectAct);
     //mainToolBar->addAction(quitAct);
@@ -673,7 +657,6 @@ void MainWnd::createStatusBar()
 {
     statusBar()->showMessage(QString());
 }
-
 
 QWidget* MainWnd::CreateMainFrame()
 {
@@ -692,13 +675,9 @@ QWidget* MainWnd::CreateMainFrame()
     m_tree_unselect = new QAction(UI_QSTRING(APP_IFACE_ACT_TTREE_UNSELECT_ALL),this);
     connect(m_tree_unselect, SIGNAL(triggered()), this, SLOT(SlotUnselectTreeItem()));
 
-    m_tree_selectonly = new QAction("Select Only This Item",this);
-    connect(m_tree_selectonly, SIGNAL(triggered()), this, SLOT(SlotSelectOnlyTreeItem()));
-
     titleTreeView->addAction(m_tree_toggle);
     titleTreeView->addAction(m_tree_select);
     titleTreeView->addAction(m_tree_unselect);
-    titleTreeView->addAction(m_tree_selectonly);
 
     titleTreeView->setContextMenuPolicy(Qt::ActionsContextMenu);
 
@@ -874,7 +853,6 @@ void MainWnd::EnterJobMode(unsigned int Flags)
         openTestFileAct->setEnabled(false);
     }
     saveAllMkvAct->setEnabled(false);
-    startStreamingAct->setEnabled(false);
     saveFolderBox->selectDialogAction()->setEnabled(false);
     backupAct->setEnabled(false);
     closeDiskAct->setEnabled(false);
@@ -966,7 +944,7 @@ void MainWnd::UpdateDrive(unsigned int Index,const utf16_t *DriveName,AP_DriveSt
 {
     if (DriveState==AP_DriveStateNoDrive)
     {
-        DriveInfo[Index].state = AP_DriveStateNoDrive;
+        DriveInfo[Index].driveState = AP_DriveStateNoDrive;
         OpenDriveAction[Index]->setVisible(false);
         RefreshEmptyFrame();
         UpdateDrivesCount();
@@ -1107,20 +1085,13 @@ int MainWnd::ReportUiMessage(
             icon = QMessageBox::Warning;
         }
 
-	QString message = QStringFromUtf16(Text);
-	if (message.startsWith("Copy complete."))
-	  {
-	    QTimer::singleShot(5000, this, SLOT(SlotEjectDisk()));
-	  }	
-	else
-	  {
-	    QMessageBox msgBox(icon,UI_QSTRING(APP_CAPTION_MSG),message,QMessageBox::Ok,this);
-	    msgBox.setEscapeButton(QMessageBox::Ok);
+        QMessageBox msgBox(icon,UI_QSTRING(APP_CAPTION_MSG),QStringFromUtf16(Text),QMessageBox::Ok,this);
+        msgBox.setEscapeButton(QMessageBox::Ok);
 
-	    m_disable_onidle++;
-	    msgBox.exec();
-	    m_disable_onidle--;
-	  }
+        m_disable_onidle++;
+        msgBox.exec();
+        m_disable_onidle--;
+
         return 0;
     }
 
@@ -1205,9 +1176,9 @@ void MainWnd::SlotSettings()
 
     dlg.exec();
 
-    bool oldExpertMode = iface_ExpertMode;
     ReReadSettings();
-    if (iface_ExpertMode!=oldExpertMode)
+
+    if (dlg.redrawRequired())
     {
         Refresh_TitleTree();
     }

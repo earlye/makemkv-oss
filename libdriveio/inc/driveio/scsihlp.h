@@ -1,7 +1,7 @@
 /*
     libDriveIo - MMC drive interrogation library
 
-    Copyright (C) 2007-2016 GuinpinSoft inc <libdriveio@makemkv.com>
+    Copyright (C) 2007-2019 GuinpinSoft inc <libdriveio@makemkv.com>
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -18,10 +18,8 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
+#include <driveio/scsicmd.h>
 #include <driveio/driveio.h>
-
-namespace LibDriveIo
-{
 
 typedef struct _ScsiDriveInfo
 {
@@ -32,13 +30,18 @@ typedef struct _ScsiDriveInfo
 
 typedef int (*QuerySpecificDriveInfoProc)(const ScsiDriveInfo* DriveInfo,ISimpleScsiTarget* ScsiTarget,DIO_INFOLIST List,DriveIoQueryType QueryType);
 
+namespace LibDriveIo
+{
 int ExecuteReadScsiCommand(ISimpleScsiTarget* ScsiTarget,const uint8_t* Cdb,unsigned int CdbLen,void *Buffer,unsigned int BufferSize,ScsiCmdResponse* Response);
 int ExecuteReadScsiCommand(ISimpleScsiTarget* ScsiTarget,const uint8_t* Cdb,unsigned int CdbLen,void *Buffer,unsigned int* BufferSize);
 int ExecuteWriteScsiCommand(ISimpleScsiTarget* ScsiTarget,const uint8_t* Cdb,unsigned int CdbLen,const void *Buffer,unsigned int BufferSize,ScsiCmdResponse* Response);
 int ExecuteWriteScsiCommand(ISimpleScsiTarget* ScsiTarget,const uint8_t* Cdb,unsigned int CdbLen,const void *Buffer,unsigned int BufferSize);
 int TestUnitReady(ISimpleScsiTarget* ScsiTarget, bool* Ready);
+int BuildInquiryData(ISimpleScsiTarget* ScsiTarget,DIO_INFOLIST List,ScsiInquiryData *InquiryData);
 int BuildDriveInfo(ISimpleScsiTarget* ScsiTarget,DIO_INFOLIST List,ScsiDriveInfo *DriveInfo);
 int QueryInquiryInfo(ISimpleScsiTarget* ScsiTarget,uint8_t Evpd,uint8_t *Buffer,unsigned int *BufferSize);
+}
+using namespace LibDriveIo;
 
 
 static inline uint32_t uint32_get_be(const void *Buf)
@@ -63,8 +66,17 @@ static inline uint16_t uint16_get_be(const void *Buf)
     return v;
 }
 
+static inline void uint32_put_be(void* Buf,uint32_t Value)
+{
+    ((uint8_t*)Buf)[0] = (uint8_t)(Value>>(3*8));
+    ((uint8_t*)Buf)[1] = (uint8_t)(Value>>(2*8));
+    ((uint8_t*)Buf)[2] = (uint8_t)(Value>>(1*8));
+    ((uint8_t*)Buf)[3] = (uint8_t)(Value>>(0*8));
+}
 
-};
-
-using namespace LibDriveIo;
+static inline void uint16_put_be(void* Buf,uint16_t Value)
+{
+    ((uint8_t*)Buf)[0] = (uint8_t)(Value>>(1*8));
+    ((uint8_t*)Buf)[1] = (uint8_t)(Value>>(0*8));
+}
 
